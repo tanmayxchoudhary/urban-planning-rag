@@ -1,0 +1,25 @@
+# Core dependencies
+torch>=2.8.0
+torchvision>=0.23.0
+transformers>=4.36.0
+pillow>=10.0.0
+
+# Vector database
+faiss-cpu>=1.7.4  # Use faiss-gpu if you have CUDA
+
+# PDF processing
+pdf2image>=1.16.3
+pypdf>=3.17.0
+
+# Gemini API
+google-genai>=0.1.0
+
+# Utilities
+python-dotenv>=1.0.0
+tqdm>=4.66.0
+accelerate>=0.25.0
+
+# System dependency (install via apt/brew):
+# - poppler-utils (for pdf2image)
+#   Ubuntu/Debian: sudo apt-get install poppler-utils
+#   macOS: brew install poppler
