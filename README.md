@@ -72,7 +72,7 @@ brew install poppler
 
 The embeddings and page images are too large for GitHub (>1GB total).
 
-**Download from:** [Google Drive Link - ADD YOUR LINK HERE]
+**Download from:** [Google Drive Link - https://drive.google.com/drive/folders/1cAXUc5Yk24spGDQOxczJgCYYWd0ORlPx]
 
 Extract and place files in this structure:
 ```
