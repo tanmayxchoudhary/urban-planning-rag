@@ -1,10 +1,17 @@
 #!/usr/bin/env python3
 """
-Command-line interface for Urban Planning RAG system.
+Command-line interface for Urban Planning RAG system v2.0.0.
 
 Usage:
     python cli.py "What is FSI for residential zones?"
     python cli.py --query "parking requirements" --top-k 5
+
+v2.0.0 Features:
+  - Two-stage retrieval: Multi-Query Expansion + MaxSim reranking
+  - Adaptive DPI embeddings (100 DPI text, 250 DPI visuals)
+  - Detailed retrieval metrics with rank improvements
+
+⚠️  Breaking: v1.0.0 embeddings incompatible. Re-run embed.py if upgrading.
 """
 
 import argparse
@@ -19,13 +26,32 @@ from rag import UrbanPlanningRAG
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Urban Planning RAG - Query planning documents with AI",
+        description="Urban Planning RAG v2.0.0 - Query planning documents with AI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
+  # Basic query
   python cli.py "What is FSI for residential zones?"
+
+  # Retrieve more pages
   python cli.py --query "parking requirements" --top-k 5
+
+  # Use different Gemini model
   python cli.py --query "open space standards" --model gemini-2.5-flash
+
+  # Advanced retrieval (v2.0.0)
+  python cli.py "What are FSI norms?" --candidates 100 --query-tokens 5
+
+  # Hide retrieval metrics
+  python cli.py "building height" --no-metrics
+
+  # Retrieve only (no answer generation)
+  python cli.py "FSI regulations" --retrieve-only
+
+v2.0.0 Features:
+  - Two-stage retrieval with MaxSim reranking
+  - Adaptive DPI (50% VRAM reduction vs v1.0.0)
+  - Detailed metrics showing rank improvements
         """
     )
 
@@ -73,6 +99,26 @@ Examples:
         help='Only retrieve pages, don\'t generate answer'
     )
 
+    parser.add_argument(
+        '--candidates',
+        type=int,
+        default=50,
+        help='Number of candidates for Stage 2 reranking (default: 50, v2.0.0)'
+    )
+
+    parser.add_argument(
+        '--query-tokens',
+        type=int,
+        default=3,
+        help='Number of distinctive query tokens for expansion (default: 3, v2.0.0)'
+    )
+
+    parser.add_argument(
+        '--no-metrics',
+        action='store_true',
+        help='Hide retrieval metrics output (v2.0.0)'
+    )
+
     args = parser.parse_args()
 
     # Get query from either positional or --query argument
@@ -114,19 +160,25 @@ Examples:
         )
 
         if args.retrieve_only:
-            # Just retrieve pages
-            results = rag.retrieve(query=query, top_k=args.top_k)
+            # Just retrieve pages (v2.0.0: with new parameters)
+            results = rag.retrieve(
+                query=query,
+                top_k=args.top_k,
+                n_candidates=args.candidates,
+                num_query_tokens=args.query_tokens,
+                show_metrics=not args.no_metrics
+            )
 
             print("\n" + "=" * 60)
-            print("📋 RETRIEVED PAGES")
+            print("📋 RETRIEVED PAGES (v2.0.0)")
             print("=" * 60)
             for i, r in enumerate(results, 1):
                 print(f"\n{i}. {r['source']} - Page {r['page']}/{r['total_pages']}")
-                print(f"   Similarity: {r['similarity']:.4f}")
+                print(f"   MaxSim Score: {r['similarity']:.2f}")
                 print(f"   Image: {r['image_path']}")
 
         else:
-            # Full RAG pipeline
+            # Full RAG pipeline (v2.0.0 uses new retrieve internally)
             answer = rag.answer_query(
                 query=query,
                 top_k=args.top_k,
@@ -134,7 +186,7 @@ Examples:
             )
 
             print("\n" + "=" * 60)
-            print("📝 ANSWER")
+            print("📝 ANSWER (v2.0.0)")
             print("=" * 60)
             print(answer)
 
