@@ -2,14 +2,22 @@
 torch>=2.8.0
 torchvision>=0.23.0
 transformers>=4.36.0
-pillow>=10.0.0
+Pillow>=10.0.0
+einops>=0.7.0
 
-# Vector database
-faiss-cpu>=1.7.4  # Use faiss-gpu if you have CUDA
+# Vector database (v2.0.0: ChromaDB replaces FAISS)
+chromadb>=0.4.0
 
-# PDF processing
-pdf2image>=1.16.3
+# PDF processing (v2.0.0: PyMuPDF replaces pdf2image - no poppler needed!)
+PyMuPDF>=1.23.0
 pypdf>=3.17.0
+
+# Computer vision (v2.0.0: for PageClassifier adaptive DPI)
+opencv-python-headless>=4.8.0
+scikit-learn>=1.3.0
+
+# ColPali engine (v2.0.0: for multi-vector embeddings)
+colpali-engine>=0.2.0
 
 # Gemini API
 google-genai>=0.1.0
@@ -18,8 +26,3 @@ google-genai>=0.1.0
 python-dotenv>=1.0.0
 tqdm>=4.66.0
 accelerate>=0.25.0
-
-# System dependency (install via apt/brew):
-# - poppler-utils (for pdf2image)
-#   Ubuntu/Debian: sudo apt-get install poppler-utils
-#   macOS: brew install poppler
