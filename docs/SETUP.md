@@ -28,24 +28,9 @@ cd urban-planning-rag
 
 ## Step 2: System Dependencies
 
-### Ubuntu/Debian
+> **v2.0.0**: No system dependencies required! PyMuPDF handles all PDF processing natively.
 
-```bash
-sudo apt-get update
-sudo apt-get install -y poppler-utils
-```
-
-### macOS
-
-```bash
-brew install poppler
-```
-
-### Windows
-
-Download poppler binaries from: https://github.com/oschwartz10612/poppler-windows/releases
-
-Add `bin/` directory to your PATH.
+Skip to Step 3.
 
 ---
 
@@ -86,17 +71,10 @@ Your terminal prompt should now show `(.venv)`.
 pip install -r requirements.txt
 ```
 
-**If you have NVIDIA GPU** and want to use GPU acceleration:
-```bash
-# Install CUDA-enabled FAISS instead of faiss-cpu
-pip uninstall faiss-cpu
-pip install faiss-gpu
-```
-
 **Verify installation:**
 ```bash
 python -c "import torch; print(f'PyTorch: {torch.__version__}')"
-python -c "import faiss; print(f'FAISS: {faiss.__version__}')"
+python -c "import chromadb; print(f'ChromaDB: {chromadb.__version__}')"
 python -c "from google import genai; print('Gemini SDK OK')"
 ```
 
@@ -197,13 +175,14 @@ python cli.py "What is FSI for residential zones?"
 Expected output:
 ```
 ============================================================
-🚀 Initializing Urban Planning RAG System
+🚀 Initializing Urban Planning RAG System v2.0.0
 ============================================================
 
-📂 Loading embeddings...
 📂 Loading metadata...
-🗄️ Building FAISS index...
-  ✅ Indexed 738 pages (embedding_dim=320)
+🗄️ Initializing ChromaDB...
+  ✅ Found existing index: 919224 patches
+💾 Loading embeddings for MaxSim reranking...
+  ✅ Loaded 738 page embeddings (list of tensors)
 🤖 Initializing Gemini VLM...
   ✅ Gemini client ready
 
@@ -211,21 +190,15 @@ Expected output:
 ============================================================
 
 🔍 Query: 'What is FSI for residential zones?'
-📊 Retrieving top 3 pages...
+⚡ Stage 1: Multi-Query Token Expansion (top-3 tokens)...
+  Found 50 candidate pages
+🔥 Stage 2: MaxSim reranking...
 
-📋 Retrieved pages:
-  1. urdpfi_vol1.pdf - Page 234 (similarity: 0.445)
-  2. urdpfi_vol1.pdf - Page 87 (similarity: 0.398)
-  3. swm_2016.pdf - Page 12 (similarity: 0.367)
-
-🖼️ Loading page images...
-🤖 Generating answer with gemini-3-flash-preview...
-
-============================================================
-📝 ANSWER
-============================================================
-According to page 234 of URDPFI Vol 1, the FSI (Floor Space Index)
-for residential zones varies based on...
+======================================================================
+📊 RETRIEVAL METRICS
+======================================================================
+🎯 Top 3 Selected (after MaxSim):
+...
 ```
 
 ---
@@ -265,7 +238,7 @@ device = "cpu"  # Force CPU
 
 The system works WITHOUT GPU for:
 - Loading embeddings
-- FAISS search
+- ChromaDB search
 - Gemini generation
 
 GPU is ONLY needed for:

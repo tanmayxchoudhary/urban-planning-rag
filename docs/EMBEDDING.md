@@ -10,13 +10,13 @@ The embedding pipeline converts PDF documents into searchable vector embeddings.
 
 **What you need:**
 - PDF documents to embed
-- GPU with 16GB+ VRAM (L4, A10, A100)
+- GPU with 8GB+ VRAM (L4, A10, A100) - down from 16GB in v1.0.0
 - OR access to cloud GPU (Lightning.ai, Google Colab, Kaggle)
 
-**Output:**
-- `embeddings.pt` - Vector embeddings for all pages
-- `metadata.json` - Page metadata (source, page numbers)
-- `page_images/` - PNG images of each page (150 DPI)
+**Output (v2.0.0):**
+- `embeddings.pt` - List of variable-length embeddings
+- `metadata.json` - Page metadata (source, page numbers, dpi, page_type)
+- `page_images/` - PNG images at adaptive DPI (100/250)
 
 **Time estimate:** ~30 minutes for 1000 pages on L4 GPU
 
@@ -57,8 +57,7 @@ Or modify the notebook to use a different path.
 **Cell 1:** Install dependencies
 ```python
 !pip install torch==2.8.0 torchvision==0.23.0 --index-url https://download.pytorch.org/whl/cu128
-!pip install transformers pillow requests pdf2image poppler-utils tqdm accelerate pypdf
-!apt-get update && apt-get install -y poppler-utils
+!pip install transformers pillow PyMuPDF tqdm accelerate pypdf chromadb opencv-python-headless
 ```
 
 **Cell 2:** Verify GPU
@@ -69,8 +68,9 @@ print(f"GPU: {torch.cuda.get_device_name(0)}")
 ```
 
 **Cell 3:** Run embedding pipeline
-- This loads ColQwen model (16GB)
-- Converts PDFs to images
+- This loads ColQwen3-4B model (8GB VRAM)
+- Classifies pages for adaptive DPI
+- Converts PDFs to images using PyMuPDF
 - Embeds all pages
 - Saves outputs to `embeddings_output/`
 
@@ -109,8 +109,7 @@ Google Colab provides free GPU access (T4, 15GB VRAM). Slightly less powerful th
 ### Install Dependencies
 
 ```python
-!pip install torch torchvision transformers pillow pdf2image pypdf tqdm accelerate
-!apt-get install -y poppler-utils
+!pip install torch torchvision transformers pillow PyMuPDF pypdf tqdm accelerate chromadb
 ```
 
 ### Upload PDFs
@@ -239,13 +238,13 @@ BATCH_SIZE = 8   # For 40GB+ VRAM
 ### What Happens Behind the Scenes
 
 ```
-PDF → pdf2image → PIL Images (150 DPI)
+PDF → PageClassifier (adaptive DPI) → PyMuPDF → PIL Images (100/250 DPI)
          ↓
-    ColQwen Processor → Tokenization + Vision Features
+    ColQwen3-4B Processor → Tokenization + Vision Features
          ↓
-    ColQwen Model → Multi-Vector Embeddings (256 patches × 320 dim)
+    ColQwen3-4B Model → Multi-Vector Embeddings (variable patches × 320 dim)
          ↓
-    Save as PyTorch Tensor → embeddings.pt (BFloat16)
+    Save as list of tensors → embeddings.pt (BFloat16)
 ```
 
 ### File Sizes
@@ -284,15 +283,11 @@ gc.collect()
 attn_implementation="sdpa"  # PyTorch's native attention
 ```
 
-### "poppler-utils not found"
+### "PyMuPDF (fitz) import error"
 
-**Solution:** Install system dependency
+**Solution:** Install PyMuPDF
 ```bash
-# Ubuntu/Debian
-sudo apt-get install poppler-utils
-
-# macOS
-brew install poppler
+pip install PyMuPDF>=1.23.0
 ```
 
 ### Notebook crashes on large PDFs
@@ -447,7 +442,7 @@ RUN apt-get update && apt-get install -y \
     poppler-utils
 
 RUN pip install torch torchvision transformers \
-    pdf2image pillow pypdf tqdm
+    PyMuPDF pillow pypdf tqdm chromadb
 
 COPY embed_docs.py /app/
 WORKDIR /app

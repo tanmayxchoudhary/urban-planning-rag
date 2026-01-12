@@ -138,7 +138,7 @@ v2.0.0 Features:
         load_encoder = True
     else:
         # Check if ColQwen is in HuggingFace cache
-        model_cache = Path.home() / ".cache" / "huggingface" / "hub" / "models--TomoroAI--tomoro-colqwen3-embed-8b"
+        model_cache = Path.home() / ".cache" / "huggingface" / "hub" / "models--TomoroAI--tomoro-colqwen3-embed-4b"
 
         if model_cache.exists():
             # Model is cached, load it (will use GPU if available, CPU otherwise)
@@ -149,7 +149,7 @@ v2.0.0 Features:
         else:
             # Model not cached
             print("⚠️  ColQwen model not found in cache")
-            print("   Use --load-encoder to download and load (16GB model)\n")
+            print("   Use --load-encoder to download and load (8GB model)\n")
             load_encoder = False
 
     try:

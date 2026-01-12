@@ -4,7 +4,7 @@ Urban Planning RAG System v2.0.0
 Complete retrieval-augmented generation pipeline for Indian urban planning documents.
 
 v2.0.0 Architecture:
-- Embeddings: TomoroAI/tomoro-colqwen2-v1.0-4b (multi-vector, 4B params)
+- Embeddings: TomoroAI/tomoro-colqwen3-embed-4b (multi-vector, 4B params)
 - Vector DB: ChromaDB (patch-level indexing, replaces FAISS)
 - Retrieval: Two-stage pipeline (Multi-Query Expansion + MaxSim reranking)
 - VLM: Gemini 3.0 Flash / 2.5 Flash (Google AI Studio API)
@@ -202,7 +202,7 @@ class UrbanPlanningRAG:
         """Load ColQwen 4B model for query encoding (v2.0.0)"""
         from transformers import AutoModel, AutoProcessor
 
-        MODEL_ID = "TomoroAI/tomoro-colqwen2-v1.0-4b"
+        MODEL_ID = "TomoroAI/tomoro-colqwen3-embed-4b"
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
         print(f"  Loading {MODEL_ID} on {device}...")

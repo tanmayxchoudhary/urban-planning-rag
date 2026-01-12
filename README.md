@@ -20,10 +20,11 @@ The system:
 
 ---
 
-## 🏗️ Architecture
+## 🏗️ Architecture (v2.0.0)
 
-- **Embeddings**: TomoroAI/tomoro-colqwen3-embed-8b (multi-vector visual document retrieval)
-- **Vector DB**: FAISS (cosine similarity with averaged embeddings)
+- **Embeddings**: TomoroAI/tomoro-colqwen3-embed-4b (multi-vector visual retrieval, 8GB VRAM)
+- **Vector DB**: ChromaDB (patch-level indexing with MaxSim reranking)
+- **Retrieval**: Two-stage pipeline (Multi-Query Expansion + MaxSim late interaction)
 - **VLM**: Gemini 3.0 Flash / 2.5 Flash (Google AI Studio API)
 
 **Why visual RAG?**  
@@ -33,11 +34,12 @@ Planning documents contain tables, diagrams, flowcharts, and color-coded maps. T
 
 ## 📚 Indexed Documents
 
-- **SWM 2016** (Solid Waste Management) - 40 pages
+- **SWM 2016** (Solid Waste Management) - 91 pages
 - **URDPFI Vol 1** (Urban and Regional Development Plans) - 447 pages
 - **URDPFI Vol 2** - 251 pages
+- **NBC** (National Building Code) - 2258 pages
 
-**Total**: 738 pages indexed
+**Total**: 3,047 pages indexed
 
 ---
 
@@ -59,14 +61,9 @@ source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install Python packages
 pip install -r requirements.txt
-
-# Install system dependency (poppler-utils for PDF processing)
-# Ubuntu/Debian:
-sudo apt-get install poppler-utils
-
-# macOS:
-brew install poppler
 ```
+
+> **v2.0.0**: No system dependencies required! PyMuPDF handles PDF processing natively.
 
 ### 3. Download Data Files
 
@@ -165,9 +162,9 @@ python scripts/embed.py --docs-dir ./docs --output-dir ./data
 **Or using the notebook** (same process, interactive):
 - See `notebooks/embed_docs.ipynb`
 
-**Process:**
+**Process (v2.0.0):**
 ```
-PDF → Page Images (150 DPI) → ColQwen → Embeddings (256×320 per page)
+PDF → PageClassifier → Adaptive DPI (100/250) → ColQwen3-4B → Variable-length embeddings
 ```
 
 **Output:**
@@ -177,13 +174,13 @@ PDF → Page Images (150 DPI) → ColQwen → Embeddings (256×320 per page)
 
 ### 2. Query Pipeline (GPU Required for Query Encoding)
 
-**Full pipeline:**
+**Query Pipeline (v2.0.0):**
 ```
-User Query → ColQwen Encoding → FAISS Search → Top-K Pages → Gemini VLM → Answer
+User Query → ColQwen Encoding → ChromaDB Multi-Query Expansion → MaxSim Reranking → Gemini VLM → Answer
 ```
 
 **GPU Requirements:**
-- **Document embedding:** Requires GPU (16GB+ VRAM) - one-time operation
+- **Document embedding:** Requires GPU (8GB+ VRAM) - one-time operation
 - **Query encoding:** Requires GPU (same model) - per query
 - **Retrieval + Generation:** Works on CPU
 
@@ -200,7 +197,7 @@ User Query → ColQwen Encoding → FAISS Search → Top-K Pages → Gemini VLM 
    results = rag.retrieve(query_embedding=precomputed_vector)
    ```
 
-**Note:** Both embedding and query encoding use the same 16GB ColQwen model.
+**Note:** Both embedding and query encoding use the 8GB ColQwen3-4B model.
 
 ---
 
@@ -242,18 +239,18 @@ urban-planning-rag/
 
 ### Embeddings
 
-- **Model**: TomoroAI/tomoro-colqwen3-embed-8b
+- **Model**: TomoroAI/tomoro-colqwen3-embed-4b
 - **Architecture**: ColPali-style multi-vector embeddings
-- **Output**: 256 patch vectors per page (320-dim each)
-- **Storage**: Averaged to single vector for FAISS compatibility
-- **Trade-off**: Lower similarity scores (0.3-0.5) but correct relative ranking
+- **Output**: Variable patch vectors per page (320-dim each)
+- **Storage**: List of tensors with variable patch counts
+- **VRAM**: 8GB (down from 16GB in v1.0.0)
 
-### Retrieval
+### Retrieval (v2.0.0)
 
-- **Index**: FAISS IndexFlatIP (inner product for cosine similarity)
-- **Normalization**: L2 normalization on embeddings
-- **Similarity**: Cosine similarity via normalized inner product
-- **Speed**: ~10ms per query on CPU
+- **Index**: ChromaDB PersistentClient (patch-level)
+- **Stage 1**: Multi-Query Token Expansion
+- **Stage 2**: MaxSim late-interaction reranking
+- **Speed**: ~50ms per query on CPU
 
 ### Generation
 
@@ -332,7 +329,7 @@ Contributions welcome! Areas of interest:
 - **ColQwen** by TomoroAI for visual document retrieval
 - **Gemini** by Google for vision-language generation
 - **Lightning.ai** for GPU compute
-- **FAISS** by Meta for efficient similarity search
+- **ChromaDB** for efficient patch-level vector search
 
 ---
 ## Citation

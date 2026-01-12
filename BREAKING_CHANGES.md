@@ -130,7 +130,7 @@ Smaller, more efficient model with minor quality trade-off.
 
 ### Impact
 - Pre-trained v1.0.0 embeddings incompatible
-- Model ID changed: `tomoro-colqwen3-embed-8b` → `tomoro-colqwen2-v1.0-4b`
+- Model ID changed: `tomoro-colqwen3-embed-8b` → `tomoro-colqwen3-embed-4b`
 
 ### Migration
 Re-embedding automatically downloads new model.

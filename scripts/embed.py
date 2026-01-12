@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Embed urban planning documents using TomoroAI/tomoro-colqwen2-v1.0-4b
+Embed urban planning documents using TomoroAI/tomoro-colqwen3-embed-4b
 
 v2.0.0 Features:
 - Adaptive DPI: 100 DPI for text-only pages, 250 DPI for visual content
@@ -27,13 +27,11 @@ from tqdm import tqdm
 import gc
 import argparse
 import sys
-import cv2
-import numpy as np
 from dataclasses import dataclass
 from typing import Literal, List
 
 
-MODEL_ID = "TomoroAI/tomoro-colqwen2-v1.0-4b"
+MODEL_ID = "TomoroAI/tomoro-colqwen3-embed-4b"
 DTYPE = torch.bfloat16
 
 PageType = Literal["TEXT_ONLY", "HAS_VISUALS"]
@@ -47,7 +45,6 @@ class PageInfo:
     dpi: int
     has_images: bool
     num_drawings: int
-    edge_density: float
 
 
 class PageClassifier:
@@ -56,10 +53,13 @@ class PageClassifier:
 
     v2.0.0: Routes text-only pages (100 DPI) vs visual content (250 DPI)
     to optimize quality vs storage trade-off.
+    
+    Uses metadata-only detection (no rendering required):
+    - has_images: Embedded images in page
+    - num_drawings: Vector drawings (tables, flowcharts, diagrams)
     """
 
     DRAWINGS_THRESHOLD = 40
-    EDGE_DENSITY_THRESHOLD = 0.12
 
     def __init__(self, text_dpi: int = 100, visual_dpi: int = 250):
         """
@@ -74,7 +74,7 @@ class PageClassifier:
 
     def classify_pdf(self, pdf_path: Path) -> List[PageInfo]:
         """
-        Classify all pages in a PDF.
+        Classify all pages in a PDF (instant, no rendering).
 
         Args:
             pdf_path: Path to PDF file
@@ -91,7 +91,7 @@ class PageClassifier:
         return results
 
     def _classify_page(self, page: fitz.Page, page_num: int) -> PageInfo:
-        """Classify single page based on visual content."""
+        """Classify single page based on visual content (metadata only, no render)."""
         has_images = len(page.get_images(full=True)) > 0
 
         try:
@@ -99,10 +99,8 @@ class PageClassifier:
         except:
             num_drawings = 0
 
-        edge_density = self._calculate_edge_density(page)
-
-        # Decision logic: visual if has images, many drawings, or high edge density
-        if has_images or num_drawings > self.DRAWINGS_THRESHOLD or edge_density > self.EDGE_DENSITY_THRESHOLD:
+        # Decision logic: visual if has images or many drawings
+        if has_images or num_drawings > self.DRAWINGS_THRESHOLD:
             page_type = "HAS_VISUALS"
         else:
             page_type = "TEXT_ONLY"
@@ -112,20 +110,8 @@ class PageClassifier:
             page_type=page_type,
             dpi=self.visual_dpi if page_type == "HAS_VISUALS" else self.text_dpi,
             has_images=has_images,
-            num_drawings=num_drawings,
-            edge_density=round(edge_density, 4)
+            num_drawings=num_drawings
         )
-
-    def _calculate_edge_density(self, page: fitz.Page, sample_dpi: int = 72) -> float:
-        """Calculate edge density using Canny edge detection."""
-        try:
-            mat = fitz.Matrix(sample_dpi / 72, sample_dpi / 72)
-            pix = page.get_pixmap(matrix=mat, colorspace=fitz.csGRAY)
-            img = np.frombuffer(pix.samples, dtype=np.uint8).reshape(pix.height, pix.width)
-            edges = cv2.Canny(img, 50, 150)
-            return np.sum(edges > 0) / edges.size
-        except:
-            return 0.0
 
 
 class DocumentEmbedder:
@@ -150,7 +136,7 @@ class DocumentEmbedder:
         self._load_model()
 
     def _load_model(self):
-        """Load ColQwen2-v1.0-4B model"""
+        """Load ColQwen3-embed-4B model"""
         print(f"📦 Loading model: {MODEL_ID}")
         print(f"   Device: {self.device}")
 
@@ -417,7 +403,7 @@ def embed_documents(
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Embed PDF documents using ColQwen2-v1.0-4B visual encoder (v2.0.0)",
+        description="Embed PDF documents using ColQwen3-embed-4B visual encoder (v2.0.0)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -438,8 +424,8 @@ Examples:
 
 v2.0.0 Features:
   - Adaptive DPI: 100 DPI text, 250 DPI visuals (automatic)
-  - PyMuPDF backend: No poppler dependency!
-  - ColQwen2-4B: 8GB VRAM (down from 16GB in v1.0.0)
+  - PyMuPDF backend: No poppler dependency!         
+  - ColQwen3-embed-4B: 8GB VRAM (down from 16GB in v1.0.0)
   - Variable patch counts: Optimal storage efficiency
         """
     )

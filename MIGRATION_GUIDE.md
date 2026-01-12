@@ -325,7 +325,7 @@ python cli.py "test"
 export HF_HOME=/path/to/cache
 
 # Or download manually:
-# python -c "from transformers import AutoModel; AutoModel.from_pretrained('TomoroAI/tomoro-colqwen2-v1.0-4b', trust_remote_code=True)"
+# python -c "from transformers import AutoModel; AutoModel.from_pretrained('TomoroAI/tomoro-colqwen3-embed-4b', trust_remote_code=True)"
 ```
 
 ### Issue: "VRAM OOM during embedding"
