@@ -163,13 +163,14 @@ class DocumentEmbedder:
             print(f"🔧 Total VRAM: {total_mem:.1f} GB")
             print(f"🔧 Model uses: {allocated:.2f} GB\n")
 
-    def embed_pdf(self, pdf_path: Path, page_infos: List[PageInfo]):
+    def embed_pdf(self, pdf_path: Path, page_infos: List[PageInfo], images_dir: Path = None):
         """
         Embed single PDF file with adaptive DPI.
 
         Args:
             pdf_path: Path to PDF file
             page_infos: Page classification results from PageClassifier
+            images_dir: Optional directory to save page images (saves during conversion, no re-render)
 
         Returns:
             embeddings: List of embedding tensors (variable patch counts)
@@ -178,7 +179,11 @@ class DocumentEmbedder:
         print(f"📄 Processing: {pdf_path.name}")
 
         # Convert PDF to images using PyMuPDF with adaptive DPI
-        print("  🖼️  Converting with Adaptive DPI...")
+        save_images = images_dir is not None
+        if save_images:
+            print("  🖼️  Converting with Adaptive DPI + saving images...")
+        else:
+            print("  🖼️  Converting with Adaptive DPI...")
         images = []
 
         doc = fitz.open(pdf_path)
@@ -189,10 +194,15 @@ class DocumentEmbedder:
             pix = page.get_pixmap(matrix=mat)
             img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
             images.append(img)
+            
+            # Save image during conversion (no re-render needed later)
+            if save_images:
+                filename = f"{pdf_path.stem}__page_{info.page_num:04d}.png"
+                img.save(images_dir / filename, "PNG", optimize=True)
 
         doc.close()
 
-        print(f"  ✅ {len(images)} pages converted")
+        print(f"  ✅ {len(images)} pages converted" + (f" + saved" if save_images else ""))
 
         # Clear memory
         if self.device == "cuda":
@@ -245,29 +255,6 @@ class DocumentEmbedder:
             print(f"  🔧 GPU Memory: {torch.cuda.memory_allocated() / 1e9:.2f} GB allocated\n")
 
         return embeddings, metadata
-
-    def save_page_images(self, pdf_path: Path, page_infos: List[PageInfo], output_dir: Path):
-        """
-        Save PDF pages as PNG images with adaptive DPI.
-
-        Args:
-            pdf_path: Path to PDF file
-            page_infos: Page classification results
-            output_dir: Directory to save images
-        """
-        doc = fitz.open(pdf_path)
-
-        for info in page_infos:
-            page = doc[info.page_num - 1]
-            mat = fitz.Matrix(info.dpi / 72, info.dpi / 72)
-            pix = page.get_pixmap(matrix=mat)
-            img = Image.frombytes("RGB", (pix.width, pix.height), pix.samples)
-
-            filename = f"{pdf_path.stem}__page_{info.page_num:04d}.png"
-            img.save(output_dir / filename, "PNG", optimize=True)
-
-        doc.close()
-        return len(page_infos)
 
 
 def embed_documents(
@@ -333,6 +320,13 @@ def embed_documents(
     # Initialize embedder
     embedder = DocumentEmbedder(batch_size=batch_size)
 
+    # Prepare images directory if saving
+    images_dir = None
+    if save_images:
+        images_dir = output_dir / "page_images"
+        images_dir.mkdir(parents=True, exist_ok=True)
+        print(f"📁 Page images will be saved to: {images_dir}\n")
+
     # Process each PDF
     all_embeddings = []
     all_metadata = []
@@ -345,7 +339,8 @@ def embed_documents(
             continue
 
         print("=" * 60)
-        embeddings, metadata = embedder.embed_pdf(pdf_path, all_classifications[pdf_name])
+        # Pass images_dir to save during conversion (single render pass)
+        embeddings, metadata = embedder.embed_pdf(pdf_path, all_classifications[pdf_name], images_dir)
 
         all_embeddings.extend(embeddings)
         all_metadata.extend(metadata)
@@ -379,20 +374,8 @@ def embed_documents(
     print(f"   - Patch counts: min={min(patch_counts)}, max={max(patch_counts)}, mean={sum(patch_counts)/len(patch_counts):.0f}")
     print(f"   - Embedding dim: {all_embeddings[0].shape[1]}")
 
-    # Save page images
     if save_images:
-        print("\n💾 Saving page images...")
-        images_dir = output_dir / "page_images"
-        images_dir.mkdir(exist_ok=True)
-
-        total_images = 0
-        for pdf_name in pdf_files:
-            pdf_path = docs_dir / pdf_name
-            if pdf_path.exists() and pdf_name in all_classifications:
-                count = embedder.save_page_images(pdf_path, all_classifications[pdf_name], images_dir)
-                total_images += count
-
-        print(f"✅ Saved {total_images} page images to {images_dir}")
+        print(f"\n✅ Page images saved to: {images_dir}")
 
     print("\n" + "=" * 60)
     print("✅ EMBEDDING COMPLETE (v2.0.0)")

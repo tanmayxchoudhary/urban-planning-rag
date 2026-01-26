@@ -157,12 +157,17 @@ class UrbanPlanningRAG:
         Build ChromaDB patch-level index from embeddings.pt (v2.0.0).
 
         Creates one entry per patch for late interaction retrieval.
+        
+        Optimized: Collects all patches first, then inserts in large batches
+        to avoid repeated HNSW index rebuilds (critical for performance).
         """
+        print("  📊 Collecting all patches...")
         embeddings_data = torch.load(self.embeddings_path, map_location='cpu')
 
-        batch_size = 5000
-        ids_batch, embeddings_batch, metadatas_batch = [], [], []
-        total_patches = 0
+        # Collect ALL patches first (this is fast, just list building)
+        all_ids = []
+        all_embeddings = []
+        all_metadatas = []
 
         for doc_idx, doc_meta in enumerate(self.metadata):
             # Get page tensor (shape: [num_patches, 320])
@@ -172,31 +177,43 @@ class UrbanPlanningRAG:
                 patch_vec = page_tensor[patch_idx].tolist()
                 patch_id = f"doc_{doc_idx}_patch_{patch_idx}"
 
-                ids_batch.append(patch_id)
-                embeddings_batch.append(patch_vec)
-                metadatas_batch.append({
+                all_ids.append(patch_id)
+                all_embeddings.append(patch_vec)
+                all_metadatas.append({
                     "doc_id": doc_idx,
                     "source": doc_meta['source'],
                     "page": doc_meta['page']
                 })
 
-                # Add batch when full
-                if len(ids_batch) >= batch_size:
-                    self.collection.add(
-                        ids=ids_batch,
-                        embeddings=embeddings_batch,
-                        metadatas=metadatas_batch
-                    )
-                    total_patches += len(ids_batch)
-                    print(f"    Indexed {total_patches} patches...", end='\r')
-                    ids_batch, embeddings_batch, metadatas_batch = [], [], []
+            # Progress update every 100 pages
+            if (doc_idx + 1) % 100 == 0:
+                print(f"    Collected {len(all_ids):,} patches from {doc_idx + 1} pages...", end='\r')
 
-        # Add remaining patches
-        if ids_batch:
-            self.collection.add(ids=ids_batch, embeddings=embeddings_batch, metadatas=metadatas_batch)
-            total_patches += len(ids_batch)
+        total_patches = len(all_ids)
+        print(f"\n  ✅ Collected {total_patches:,} total patches")
+        print(f"  🔨 Inserting into ChromaDB in large batches (this may take a few minutes)...")
 
-        print(f"\n  ✅ Indexed {total_patches} patches")
+        # Insert in VERY large batches to minimize index rebuilds
+        # ChromaDB rebuilds HNSW after each add() - fewer calls = much faster
+        batch_size = 40000  # Increased from 5000 to minimize rebuilds
+        
+        for i in range(0, total_patches, batch_size):
+            end_idx = min(i + batch_size, total_patches)
+            
+            self.collection.add(
+                ids=all_ids[i:end_idx],
+                embeddings=all_embeddings[i:end_idx],
+                metadatas=all_metadatas[i:end_idx]
+            )
+            
+            pct = (end_idx / total_patches) * 100
+            print(f"    Indexed {end_idx:,}/{total_patches:,} patches ({pct:.0f}%)...", end='\r')
+
+        print(f"\n  ✅ Indexed {total_patches:,} patches")
+        
+        # Clear memory
+        del all_ids, all_embeddings, all_metadatas, embeddings_data
+        gc.collect()
 
     def _load_query_encoder(self):
         """Load ColQwen 4B model for query encoding (v2.0.0)"""
