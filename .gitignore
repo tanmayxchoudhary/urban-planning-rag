@@ -1,34 +1,15 @@
 # Python
 __pycache__/
 *.py[cod]
-*$py.class
 *.so
 .Python
 build/
-develop-eggs/
 dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
-pip-wheel-metadata/
-share/python-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
-MANIFEST
 
 # Virtual environments
 .venv/
 venv/
-ENV/
-env/
-.virtualenv/
 
 # Environment variables
 .env
@@ -38,40 +19,25 @@ env/
 .vscode/
 .idea/
 *.swp
-*.swo
-*~
 .DS_Store
 
 # Jupyter Notebook
 .ipynb_checkpoints
 
-# meta documentations
-meta/
-
-
-#pdf folder
-
-
-
-# Data files (too large for GitHub)
-data/embeddings/embeddings.pt
+# Data files (too large for Git)
+data/embeddings/*.pt
 data/page_images/
+data/chroma_db/
+pdfs/
 
-# But keep directory structure
+# Keep directory structure
 !data/.gitkeep
 !data/embeddings/.gitkeep
 !data/page_images/.gitkeep
 
 # Model cache
 .cache/
-*.ckpt
-*.pth
-*.bin
 
 # Logs
 *.log
 logs/
-
-# OS
-Thumbs.db
-data/chroma_db/

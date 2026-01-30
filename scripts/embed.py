@@ -2,10 +2,10 @@
 """
 Embed urban planning documents using TomoroAI/tomoro-colqwen3-embed-4b
 
-v2.0.0 Features:
+Features:
 - Adaptive DPI: 100 DPI for text-only pages, 250 DPI for visual content
 - PyMuPDF backend: No poppler dependency
-- Efficient 4B model: 8GB VRAM (down from 16GB in v1.0.0)
+- Efficient 4B model: 8GB VRAM
 - Variable-length embeddings: List of tensors for optimal storage
 
 Usage:

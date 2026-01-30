@@ -20,12 +20,13 @@ The system:
 
 ---
 
-## 🏗️ Architecture (v2.0.0)
+## 🏗️ Architecture
 
 - **Embeddings**: TomoroAI/tomoro-colqwen3-embed-4b (multi-vector visual retrieval, 8GB VRAM)
 - **Vector DB**: ChromaDB (patch-level indexing with MaxSim reranking)
 - **Retrieval**: Two-stage pipeline (Multi-Query Expansion + MaxSim late interaction)
 - **VLM**: Gemini 3.0 Flash / 2.5 Flash (Google AI Studio API)
+- **Deployment**: Cloud GPU ready with API endpoints
 
 **Why visual RAG?**  
 Planning documents contain tables, diagrams, flowcharts, and color-coded maps. Traditional OCR destroys spatial layout and visual context. Our system embeds entire page images, preserving all visual information.

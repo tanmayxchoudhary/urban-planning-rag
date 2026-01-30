@@ -5,22 +5,27 @@ transformers>=4.36.0
 Pillow>=10.0.0
 einops>=0.7.0
 
-# Vector database (v2.0.0: ChromaDB replaces FAISS)
+# Vector database
 chromadb>=0.4.0
 
-# PDF processing (v2.0.0: PyMuPDF replaces pdf2image - no poppler needed!)
+# PDF processing
 PyMuPDF>=1.23.0
 pypdf>=3.17.0
 
-# Computer vision (v2.0.0: for PageClassifier adaptive DPI)
+# Computer vision
 opencv-python-headless>=4.8.0
 scikit-learn>=1.3.0
 
-# ColPali engine (v2.0.0: for multi-vector embeddings)
+# ColPali engine
 colpali-engine>=0.2.0
 
 # Gemini API
 google-genai>=0.1.0
+
+# Cloud API (optional - for remote GPU deployment)
+fastapi>=0.104.0
+uvicorn>=0.24.0
+python-multipart>=0.0.6
 
 # Utilities
 python-dotenv>=1.0.0
