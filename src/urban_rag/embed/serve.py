@@ -10,10 +10,10 @@ Used by batch indexing (index-batch-visual) and live queries (retrieve-visual).
 
 from __future__ import annotations
 
-import logging
 import time
 from pathlib import Path
 
+import structlog
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -22,7 +22,7 @@ from urban_rag.common.errors import EmbeddingError, ServiceUnavailableError
 from urban_rag.common.logging import configure_logging
 from urban_rag.embed.colqwen import VisualEmbedder, get_embedder, release_embedder
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Configure logging
 configure_logging()

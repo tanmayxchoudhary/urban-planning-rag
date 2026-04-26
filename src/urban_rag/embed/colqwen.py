@@ -12,10 +12,10 @@ Key features:
 
 from __future__ import annotations
 
-import logging
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+import structlog
 import torch
 from PIL import Image
 
@@ -25,7 +25,7 @@ if TYPE_CHECKING:
     from colpali_engine.models import ColQwen2, ColQwen2Processor
     from transformers import AutoProcessor
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # Default model identifier
 DEFAULT_MODEL_ID = "vidore/colqwen2.5-v0.2"

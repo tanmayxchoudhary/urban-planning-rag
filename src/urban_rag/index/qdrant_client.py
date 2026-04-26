@@ -13,15 +13,14 @@ The text embedding dimension is 768 (GTE-ModernColBERT).
 
 from __future__ import annotations
 
-import logging
-
+import structlog
 from qdrant_client import models
 from qdrant_client.qdrant_client import QdrantClient
 
 from urban_rag.common.errors import ServiceUnavailableError
 from urban_rag.common.settings import get_settings
 
-logger = logging.getLogger(__name__)
+logger = structlog.get_logger(__name__)
 
 # ---------------------------------------------------------------------------
 # Constants — collection names and vector dimensions
@@ -149,12 +148,17 @@ def _create_visual_collection(client: QdrantClient) -> None:
 
 
 def _create_text_collection(client: QdrantClient) -> None:
-    """Create the pages_text collection for GTE-ModernColBERT text embeddings.
+    """Create the pages_text collection for text + BM25 sparse retrieval.
 
     Schema per PLAN.md §6.3:
-    - text: 768-dim single-vector per text chunk
-    - Optional sparse BM25 field added at index time
+    - text: 768-dim multivector (GTE-ModernColBERT late-interaction per-token)
+    - pooled: 768-dim single vector for ANN candidate pre-filtering
+    - sparse: BM25-weighted sparse vector for keyword retrieval
+    - HNSW m=16, ef_construct=128 on dense fields
+    - Sparse uses inverted index (not HNSW) with dot product similarity
     """
+    from qdrant_client import models
+
     name = COLLECTION_PAGES_TEXT
     if client.collection_exists(name):
         logger.debug("Collection already exists, skipping", collection=name)
@@ -167,15 +171,24 @@ def _create_text_collection(client: QdrantClient) -> None:
                 "text": models.VectorParams(
                     size=TEXT_EMBED_DIM,
                     distance=models.Distance.COSINE,
+                    multivector_config=models.MultiVectorConfig(
+                        comparator=models.MultiVectorComparator.MAX_SIM,
+                    ),
                 ),
+                "pooled": models.VectorParams(
+                    size=TEXT_EMBED_DIM,
+                    distance=models.Distance.COSINE,
+                ),
+            },
+            sparse_vectors_config={
+                "sparse": models.SparseVectorParams(),
             },
             hnsw_config=models.HnswConfigDiff(
                 m=16,
                 ef_construct=128,
             ),
-            # No scalar quantization on text collection — different compression profile
         )
-        logger.info("Collection created", collection=name)
+        logger.info("Collection created with sparse vectors", collection=name)
     except Exception as e:
         if "already exists" in str(e).lower():
             logger.debug("Collection created by another process", collection=name)
