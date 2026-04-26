@@ -105,16 +105,28 @@ def parse_document(pdf_path: Path, doc_hash: str) -> dict[str, object]:
             parsed_result, parser_used = _parse_with_marker(pdf_path, doc_hash)
             log.info("marker_parse_success", doc_hash=doc_hash)
         except Exception as exc:
-            log.error(
+            log.warning(
                 "marker_fallback_also_failed",
                 doc_hash=doc_hash,
                 error=str(exc),
-                exc_info=True,
             )
-            raise ParseError(
-                f"Both Docling and Marker failed for {pdf_path.name}. "
-                f"Docling error: {exc}; Marker error: {exc}"
-            ) from exc
+            # ── Stage 3: Fall back to PyMuPDF text extraction ─────────────────
+            log.info("pymupdf_fallback_triggered", doc_hash=doc_hash)
+            try:
+                parsed_result, parser_used = _parse_with_pymupdf(pdf_path, doc_hash)
+                log.info("pymupdf_parse_success", doc_hash=doc_hash)
+            except Exception as pymupdf_exc:
+                log.error(
+                    "all_parsers_failed",
+                    doc_hash=doc_hash,
+                    error=str(pymupdf_exc),
+                    exc_info=True,
+                )
+                raise ParseError(
+                    f"All parsers failed for {pdf_path.name}. "
+                    f"Docling error: {exc}; Marker error: {exc}; "
+                    f"PyMuPDF error: {pymupdf_exc}"
+                ) from exc
 
     # ── Stage 3: Validate and annotate result ──────────────────────────────
     if not parsed_result:
@@ -524,6 +536,72 @@ def _parse_marker_tables(full_text: str) -> list[str]:
         tables.append("\n".join(current_table_lines))
 
     return tables
+
+
+# ---------------------------------------------------------------------------
+# PyMuPDF fallback parser (last resort)
+# ---------------------------------------------------------------------------
+
+
+def _parse_with_pymupdf(pdf_path: Path, doc_hash: str) -> tuple[dict[str, object], str]:
+    """Parse PDF using PyMuPDF as a last-resort fallback.
+
+    This is used when neither Docling nor Marker is available.
+    It extracts raw text from each page using PyMuPDF's text extraction.
+
+    Returns:
+        A (parsed_dict, parser_name) tuple where parser_name == "pymupdf".
+    """
+    import fitz
+
+    doc = fitz.open(pdf_path)
+    pages: list[dict[str, object]] = []
+    all_text_parts: list[str] = []
+
+    for page_num, page in enumerate(doc, start=1):
+        text = page.get_text("text") or ""
+        page_dict: dict[str, object] = {
+            "page_num": page_num,
+            "width": page.rect.width,
+            "height": page.rect.height,
+            "elements": [
+                {
+                    "type": "paragraph",
+                    "text": text,
+                    "page": page_num,
+                }
+            ],
+        }
+        pages.append(page_dict)
+        if text.strip():
+            all_text_parts.append(f"[Page {page_num}]\n{text}")
+
+    doc.close()
+
+    # Build a minimal sections structure from page text
+    sections: list[dict[str, object]] = [
+        {
+            "title": pdf_path.name,
+            "level": 1,
+            "page_start": 1,
+            "page_end": len(pages),
+            "children": [],
+        }
+    ]
+
+    parsed: dict[str, object] = {
+        "version": "pymupdf-v1",
+        "sections": sections,
+        "pages": pages,
+        "tables": [],
+        "metadata": {
+            "parser": "pymupdf",
+            "page_count": len(pages),
+            "total_text_length": sum(len(t) for t in all_text_parts),
+        },
+    }
+
+    return parsed, "pymupdf"
 
 
 # ---------------------------------------------------------------------------

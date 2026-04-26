@@ -52,20 +52,36 @@ def main() -> None:
             bool, typer.Option("--skip-eval", help="Skip eval validation")
         ] = False,
     ) -> None:
-        """Ingest a PDF document into the corpus."""
+        """Ingest a PDF document (or all PDFs in a directory) into the corpus."""
         from pathlib import Path
 
-        from urban_rag.cli.ingest import ingest_file
-        from urban_rag.common.errors import ValidationError
+        from urban_rag.cli.ingest import ingest_directory, ingest_file
+        from urban_rag.common.errors import IngestError, ValidationError
 
         console = Console()
+        p = Path(path)
 
         try:
-            ingest_file(Path(path))
+            if p.is_dir():
+                exit_code, count = ingest_directory(p, rebuild=rebuild, skip_eval=skip_eval)
+                if count == 0:
+                    console.print(f"[yellow]No PDFs found in:[/yellow] {path}")
+                    raise typer.Exit(code=0)
+                console.print(
+                    f"[green]Ingested {count} PDF(s) from:[/green] {path}"
+                )
+                raise typer.Exit(code=exit_code)
+            ingest_file(p, rebuild=rebuild, skip_eval=skip_eval)
             console.print(f"[green]Successfully ingested:[/green] {path}")
         except ValidationError as e:
             console.print(f"[red]Validation error:[/red] {e.message}")
             raise typer.Exit(code=1) from e
+        except IngestError as e:
+            console.print(f"[red]Ingest error:[/red] {e.message}")
+            log.error("ingest_failed", path=path, error=str(e))
+            raise typer.Exit(code=1) from e
+        except typer.Exit:
+            raise  # Let typer.Exit propagate cleanly
         except Exception as e:
             console.print(f"[red]Ingest error:[/red] {e}")
             log.error("ingest_failed", path=path, error=str(e))
