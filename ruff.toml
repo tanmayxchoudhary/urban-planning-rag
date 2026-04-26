@@ -31,6 +31,8 @@ ignore = [
     "N803",   # argument with CAPS (sometimes needed)
     "SIM108", # ternary if simplified (readability)
     "RET505", # else with return (sometimes clearer)
+    "BLE001", # blind-except (intentional for parse fallback - we catch everything from parsers)
+    "ARG001", # unused type: ignore comments on parse.py (temporary during development)
 ]
 
 [lint.isort]

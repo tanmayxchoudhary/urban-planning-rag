@@ -76,3 +76,10 @@ class RateLimitError(UrbanRagError):
 
     code = "rate_limited"
     message = "Rate limit exceeded"
+
+
+class ParseError(UrbanRagError):
+    """Raised when document parsing fails (Docling, Marker, etc.)."""
+
+    code = "parse_error"
+    message = "Document parsing failed"
