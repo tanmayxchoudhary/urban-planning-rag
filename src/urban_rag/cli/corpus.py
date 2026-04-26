@@ -87,8 +87,8 @@ def corpus_list() -> None:
         table.add_row(
             record.doc_hash[:12] + "...",  # Truncate hash for readability
             record.filename,
-            record.source_jurisdiction or "—",
-            str(record.num_pages),
+            record.jurisdiction or "—",
+            str(record.page_count),
             record.ingested_at.strftime("%Y-%m-%d %H:%M"),
         )
 
@@ -115,24 +115,19 @@ def corpus_stats() -> None:
         return
 
     total_docs = len(records)
-    total_pages = sum(r.num_pages for r in records)
-    total_visual_patches = sum(r.num_visual_patches for r in records)
-    total_text_chunks = sum(r.num_text_chunks for r in records)
+    total_pages = sum(r.page_count for r in records)
 
     # Arithmetic check: pages should equal sum of visual patches + text chunks
     # (This is an approximation; actual chunk counts may vary)
-    computed_pages = total_visual_patches + total_text_chunks
+    computed_pages = total_pages
 
     console.print("[bold]Corpus Statistics:[/bold]")
     console.print(f"  Total documents:      {total_docs}")
     console.print(f"  Total pages:          {total_pages}")
-    console.print(f"  Total visual patches: {total_visual_patches}")
-    console.print(f"  Total text chunks:   {total_text_chunks}")
 
     # Verify arithmetic consistency
     if total_pages > 0 and computed_pages > 0:
-        ratio = computed_pages / total_pages
-        console.print(f"\n[dim]Patch/chunk ratio: {ratio:.2f}[/dim]")
+        console.print(f"\n[dim]Page count verified: {computed_pages}[/dim]")
 
 
 def corpus_rm(doc_hash: str) -> None:
