@@ -53,9 +53,23 @@ def main() -> None:
         ] = False,
     ) -> None:
         """Ingest a PDF document into the corpus."""
+        from pathlib import Path
+
+        from urban_rag.cli.ingest import ingest_file
+        from urban_rag.common.errors import ValidationError
+
         console = Console()
-        console.print("[yellow]ingest command not yet implemented[/yellow]")
-        log.info("ingest_command_placeholder", path=path, rebuild=rebuild, skip_eval=skip_eval)
+
+        try:
+            ingest_file(Path(path))
+            console.print(f"[green]Successfully ingested:[/green] {path}")
+        except ValidationError as e:
+            console.print(f"[red]Validation error:[/red] {e.message}")
+            raise typer.Exit(code=1) from e
+        except Exception as e:
+            console.print(f"[red]Ingest error:[/red] {e}")
+            log.error("ingest_failed", path=path, error=str(e))
+            raise typer.Exit(code=1) from e
 
     @app.command("query")
     def query_cmd(
