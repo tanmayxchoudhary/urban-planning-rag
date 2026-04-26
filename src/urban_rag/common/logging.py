@@ -15,8 +15,17 @@ import structlog
 from urban_rag.common.settings import get_settings
 
 
-def configure_logging() -> None:
-    """Configure structlog for the application."""
+def configure_logging(
+    *,
+    corpus_version: str | None = None,
+    service: str | None = None,
+) -> None:
+    """Configure structlog for the application.
+
+    Args:
+        corpus_version: Version string of the indexed corpus. Will be bound to all log events.
+        service: Name of the service emitting logs (e.g., "api", "cli", "embed").
+    """
     settings = get_settings()
 
     logging.basicConfig(
@@ -24,6 +33,13 @@ def configure_logging() -> None:
         stream=sys.stdout,
         level=getattr(logging, settings.log_level.upper(), logging.INFO),
     )
+
+    # Set default context variables that will be merged into every log event
+    structlog.contextvars.clear_contextvars()
+    if corpus_version is not None:
+        structlog.contextvars.bind_contextvars(corpus_version=corpus_version)
+    if service is not None:
+        structlog.contextvars.bind_contextvars(service=service)
 
     structlog.configure(
         processors=[
