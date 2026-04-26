@@ -36,6 +36,7 @@ class DocumentRecord(BaseModel):
         Field(default="unknown")
     )
     page_count: int = Field(..., ge=0)
+    size_bytes: int = Field(default=0, ge=0, description="File size in bytes")
     storage_uri: str = Field(default="", description="s3://urban-rag-source/<sha>.pdf")
     ingested_at: datetime = Field(default_factory=datetime.utcnow)
     indexed_at: datetime | None = Field(default=None)
