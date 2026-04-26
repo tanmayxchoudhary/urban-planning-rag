@@ -254,6 +254,16 @@ def _format_sse(event_type: str, data: dict[str, Any]) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Error codes (per validation contract)
+# ---------------------------------------------------------------------------
+
+RETRIEVAL_TIMEOUT_CODE = "retrieval_timeout"  # HTTP 504
+GENERATION_FAILED_CODE = "generation_failed"  # HTTP 502
+INTERNAL_CODE = "internal"  # HTTP 500
+OUT_OF_CORPUS_REASON = "out_of_corpus"
+
+
+# ---------------------------------------------------------------------------
 # Background task: run retrieval + generation pipeline
 # ---------------------------------------------------------------------------
 
@@ -265,7 +275,12 @@ async def _run_query_pipeline(
     top_k: int,
     filters: dict[str, str],
 ) -> None:
-    """Run the full retrieval + generation pipeline and store result."""
+    """Run the full retrieval + generation pipeline and store result.
+
+    This is used only for persistence (GET /v1/ask/{id} after stream completes).
+    The SSE stream is the primary path; this just ensures the answer is available
+    for later retrieval via GET.
+    """
     try:
         # Retrieval phase
         retrieval_result = await retrieve_async(
@@ -278,29 +293,63 @@ async def _run_query_pipeline(
             use_rerank=True,
         )
 
-        # Generation phase - consume events
-        async for _event in answer(
+        # Generation phase - consume events for persistence
+        async for event in answer(
             query=question,
             retrieval_result=retrieval_result,
             mode=mode,
         ):
-            # Events are streamed via SSE; store completion state
-            pass
-
-        # Store completion state
-        _query_store[query_id] = {
-            "question": question,
-            "mode": mode,
-            "retrieval_result": retrieval_result.model_dump(),
-            "completed_at": datetime.now(UTC).isoformat(),
-        }
+            # Store completion state on generation_completed
+            event_name = event.__class__.__name__
+            if event_name == "GenerationCompletedEvent":
+                _query_store[query_id].update({
+                    "status": "completed",
+                    "retrieval_result": retrieval_result.model_dump(),
+                    "answer": {
+                        "answer_markdown": getattr(event, "answer_markdown", ""),
+                        "citations": [c.model_dump() for c in getattr(event, "citations", [])],
+                        "confidence": getattr(event, "confidence", "medium"),
+                        "diagnostics": _safe_model_dump(getattr(event, "diagnostics", None)),
+                        "query_id": getattr(event, "query_id", query_id),
+                    },
+                    "completed_at": datetime.now(UTC).isoformat(),
+                })
+            elif event_name == "RefusedEvent":
+                _query_store[query_id].update({
+                    "status": "refused",
+                    "retrieval_result": retrieval_result.model_dump()
+                    if retrieval_result.candidates else {},
+                    "refused_reason": getattr(event, "reason", "unknown"),
+                    "refused_message": getattr(event, "message", ""),
+                    "completed_at": datetime.now(UTC).isoformat(),
+                })
+            elif event_name == "ErrorEvent":
+                _query_store[query_id].update({
+                    "status": "error",
+                    "error_code": getattr(event, "code", INTERNAL_CODE),
+                    "error_message": getattr(event, "message", ""),
+                    "error_stage": getattr(event, "stage", "generation"),
+                    "completed_at": datetime.now(UTC).isoformat(),
+                })
 
     except Exception as e:
-        _query_store[query_id] = {
-            "error": str(e),
-            "error_code": getattr(e, "code", "internal"),
-            "completed_at": datetime.now(UTC).isoformat(),
+        error_code = getattr(e, "code", INTERNAL_CODE)
+        # Map error codes to HTTP status for storage
+        status_map = {
+            "retrieval_timeout": 504,
+            "generation_failed": 502,
+            "validation_error": 422,
+            "rate_limited": 429,
+            "not_found": 404,
         }
+        http_status = status_map.get(error_code, 500)
+        _query_store[query_id].update({
+            "status": "error",
+            "error_code": error_code,
+            "error_message": str(e),
+            "http_status": http_status,
+            "completed_at": datetime.now(UTC).isoformat(),
+        })
 
 
 # ---------------------------------------------------------------------------
@@ -573,6 +622,33 @@ async def get_answer(query_id: str) -> CompletedAnswerResponse:
         )
 
     entry = _query_store[query_id]
+    query_status = entry.get("status", "pending")
+    if query_status == "refused":
+        raise HTTPException(
+            status_code=status.HTTP_200_OK,
+            detail={
+                "error": {
+                    "code": "refused",
+                    "message": entry.get("refused_message", "Query was refused."),
+                    "reason": entry.get("refused_reason", "unknown"),
+                    "trace_id": query_id,
+                }
+            },
+        )
+
+    # Handle error queries
+    if query_status == "error":
+        http_status = entry.get("http_status", 500)
+        raise HTTPException(
+            status_code=http_status,
+            detail={
+                "error": {
+                    "code": entry.get("error_code", INTERNAL_CODE),
+                    "message": entry.get("error_message", "An error occurred."),
+                    "trace_id": query_id,
+                }
+            },
+        )
 
     if "answer" not in entry:
         raise HTTPException(
@@ -581,18 +657,6 @@ async def get_answer(query_id: str) -> CompletedAnswerResponse:
                 "error": {
                     "code": "not_ready",
                     "message": "Answer not yet available. Stream via /v1/ask/{id}/stream.",
-                    "trace_id": query_id,
-                }
-            },
-        )
-
-    if "error" in entry:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail={
-                "error": {
-                    "code": entry.get("error_code", "internal"),
-                    "message": entry["error"],
                     "trace_id": query_id,
                 }
             },

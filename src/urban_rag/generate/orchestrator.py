@@ -24,8 +24,9 @@ from __future__ import annotations
 
 import time
 import uuid
+from collections.abc import AsyncGenerator
 from dataclasses import dataclass
-from typing import AsyncGenerator, Literal
+from typing import Literal
 
 import structlog
 
