@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -38,18 +39,27 @@ class Settings(BaseSettings):
     # Qdrant
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
+    qdrant_url: str = Field(default="http://localhost:6333", description="Full Qdrant server URL")
     qdrant_collection_visual: str = "pages_visual"
     qdrant_collection_text: str = "pages_text"
 
     # VLM Generation
     gemini_model: str = "gemini-2.5-flash"
-    gemini_api_key: str | None = None
+    gemini_api_key: str = Field(description="Google Gemini API key")
 
     # Logging
     log_level: str = "INFO"
 
     # Telemetry
     otel_endpoint: str | None = None
+
+    @field_validator("gemini_api_key")
+    @classmethod
+    def validate_gemini_api_key(cls, v: str) -> str:
+        """Ensure GEMINI_API_KEY is not empty or placeholder."""
+        if not v or v == "your_gemini_api_key_here":
+            raise ValueError("GEMINI_API_KEY is required and must be a valid API key")
+        return v
 
     def log_config(self) -> dict:
         """Return logging configuration dict."""
@@ -67,5 +77,5 @@ def get_settings() -> Settings:
     """Return the global Settings singleton, instantiating it on first call."""
     global _settings
     if _settings is None:
-        _settings = Settings()
+        _settings = Settings()  # pyright: ignore[reportCallIssue]
     return _settings
