@@ -354,6 +354,63 @@ def _build_filter(filters: dict[str, str]) -> models.Filter | None:  # type: ign
 
 
 # ---------------------------------------------------------------------------
+# Cached corpus-level scorer (lazy initialization)
+# ---------------------------------------------------------------------------
+
+_cached_scorer: BM25QueryScorer | None = None
+_cached_scorer_lock: bool = False
+
+
+def _get_corpus_scorer() -> BM25QueryScorer:
+    """Return the cached corpus-level BM25 scorer, initializing if needed.
+
+    Loads all indexed corpus texts once and builds a BM25 scorer that is shared
+    across all query calls. This ensures query terms are scored against the actual
+    corpus IDF values rather than an empty vocabulary.
+
+    Returns:
+        BM25QueryScorer initialized with all indexed corpus texts.
+    """
+    global _cached_scorer, _cached_scorer_lock
+
+    if _cached_scorer is not None:
+        return _cached_scorer
+
+    if _cached_scorer_lock:
+        # Another thread is initializing — fall back to lightweight scorer
+        return _create_lightweight_scorer()
+
+    _cached_scorer_lock = True
+    try:
+        # Discover corpus texts from docs/ directory
+        from urban_rag.common.settings import get_settings
+        from urban_rag.index.text_index import _discover_chunks
+
+        settings = get_settings()
+        docs_dir = settings.docs_dir
+        manifest_path = settings.manifest_path
+
+        try:
+            from pathlib import Path
+            chunks = _discover_chunks(Path(docs_dir), Path(manifest_path))
+        except Exception:
+            logger.warning("corpus_scorer_chunk_discovery_failed", falling_back=True)
+            return _create_lightweight_scorer()
+
+        texts = [c.text for c in chunks]
+        if not texts:
+            logger.warning("corpus_scorer_no_texts_found", falling_back=True)
+            return _create_lightweight_scorer()
+
+        scorer = BM25QueryScorer(texts)
+        logger.info("corpus_scorer_initialized", corpus_docs=len(texts))
+        return scorer
+
+    finally:
+        _cached_scorer_lock = False
+
+
+# ---------------------------------------------------------------------------
 # Main sparse retrieval function
 # ---------------------------------------------------------------------------
 
@@ -378,7 +435,7 @@ def retrieve_sparse(
         top_k: Number of candidates to return (default 20).
         prefetch_limit: Number of candidates to fetch for reranking.
         filters: Optional payload filters (jurisdiction, doc_type, etc.).
-        scorer: Optional BM25QueryScorer. If None, creates a lightweight scorer.
+        scorer: Optional BM25QueryScorer. If None, uses the cached corpus scorer.
 
     Returns:
         RetrievalResult with candidates sorted by BM25 score.
@@ -397,9 +454,8 @@ def retrieve_sparse(
     tokenize_start = time.perf_counter()
 
     if scorer is None:
-        # Create a lightweight scorer without full corpus
-        # For production, this should be pre-initialized with corpus stats
-        scorer = _create_lightweight_scorer()
+        # Use the cached corpus-level scorer (lazy initialized)
+        scorer = _get_corpus_scorer()
 
     try:
         query_indices, query_values = scorer.build_sparse_query_vector(query)
