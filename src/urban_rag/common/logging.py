@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import logging
 import sys
+from typing import Any
 
 import structlog
 
@@ -38,6 +39,38 @@ def configure_logging() -> None:
     )
 
 
-def get_logger(name: str | None = None) -> structlog.PrintLogger:
-    """Return a configured structlog logger."""
-    return structlog.get_logger(name)
+def get_logger(
+    name: str | None = None,
+    *,
+    query_id: str | None = None,
+    corpus_version: str | None = None,
+    service: str | None = None,
+    **extra: Any,
+) -> structlog.PrintLogger:
+    """Return a configured structlog logger.
+
+    Args:
+        name: Logger name (e.g., __name__ of calling module).
+        query_id: Unique query identifier for telemetry/feedback correlation.
+        corpus_version: Version string of the indexed corpus.
+        service: Name of the service emitting the log (e.g., "api", "cli", "embed").
+        **extra: Additional context fields to bind to all log events.
+
+    Returns:
+        A structlog PrintLogger with bound context variables.
+    """
+    logger = structlog.get_logger(name)
+
+    # Bind standard correlation fields
+    if query_id is not None:
+        logger = logger.bind(query_id=query_id)
+    if corpus_version is not None:
+        logger = logger.bind(corpus_version=corpus_version)
+    if service is not None:
+        logger = logger.bind(service=service)
+
+    # Bind any extra fields
+    for key, value in extra.items():
+        logger = logger.bind(**{key: value})
+
+    return logger
