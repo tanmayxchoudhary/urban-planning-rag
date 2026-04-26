@@ -25,6 +25,7 @@ select = [
 ]
 ignore = [
     "S101",   # assert (fine for tests)
+    "FBT001", # boolean default positional arg (FBT002 ignore too but FBT001 still fires on rebuild/skip_eval/use_rerank in Typer CLI commands)
     "FBT002", # boolean default positional arg (required for Typer CLI options)
     "FBT003", # boolean default arg (sometimes needed)
     "N802",   # method name with CAPS (sometimes needed for enum-like)

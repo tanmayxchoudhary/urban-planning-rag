@@ -53,7 +53,7 @@ class VisualEmbedder:
     def __init__(
         self,
         model_id: str | None = None,
-        force_cpu: bool = False,  # noqa: FBT001
+        force_cpu: bool = False,
     ) -> None:
         """Initialize the VisualEmbedder.
 
@@ -448,7 +448,7 @@ _embedder_instance: VisualEmbedder | None = None
 _embedder_lock = None  # Simplified: in production use threading.Lock
 
 
-def get_embedder(force_cpu: bool = False) -> VisualEmbedder:  # noqa: FBT001
+def get_embedder(force_cpu: bool = False) -> VisualEmbedder:
     """Get the singleton VisualEmbedder instance.
 
     Args:
