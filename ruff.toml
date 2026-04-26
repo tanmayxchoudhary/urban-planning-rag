@@ -25,6 +25,7 @@ select = [
 ]
 ignore = [
     "S101",   # assert (fine for tests)
+    "FBT002", # boolean default positional arg (required for Typer CLI options)
     "FBT003", # boolean default arg (sometimes needed)
     "N802",   # method name with CAPS (sometimes needed for enum-like)
     "N803",   # argument with CAPS (sometimes needed)
