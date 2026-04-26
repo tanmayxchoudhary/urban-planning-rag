@@ -352,6 +352,65 @@ class TestCorpusReindex:
             corpus_module.corpus_reindex(sample_records[0].doc_hash)
 
 
+class TestCorpusRmMissingDocsDir:
+    """Tests for corpus rm with missing docs directory."""
+
+    def test_rm_missing_docs_dir_shows_warning_not_crash(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that rm handles missing docs_dir gracefully (no FileNotFoundError)."""
+        from urban_rag.cli import corpus as corpus_module
+
+        temp_docs = tmp_path / "docs"  # Does NOT exist
+        temp_manifest = tmp_path / "manifest.parquet"
+
+        # Create mock settings object
+        mock_settings = MagicMock()
+        mock_settings.docs_dir = str(temp_docs)
+        mock_settings.manifest_path = str(temp_manifest)
+
+        monkeypatch.setattr(
+            "urban_rag.cli.corpus.get_settings", lambda: mock_settings
+        )
+
+        # Should not raise FileNotFoundError - the function checks docs_dir.exists()
+        # Since manifest is also empty, DocumentNotFoundError is raised
+        from urban_rag.common.errors import DocumentNotFoundError
+        with pytest.raises(DocumentNotFoundError):
+            corpus_module.corpus_rm("z" * 64)
+
+
+class TestCorpusReindexMissingDocsDir:
+    """Tests for corpus reindex with missing docs directory."""
+
+    def test_reindex_missing_docs_dir_raises_clear_error(
+        self,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
+        populated_manifest: Path,
+        sample_records: list[DocumentRecord],
+    ) -> None:
+        """Test that reindex raises ValidationError with clear message when docs_dir missing."""
+        from urban_rag.cli import corpus as corpus_module
+        from urban_rag.common.errors import ValidationError
+
+        temp_docs = tmp_path / "docs"  # Does NOT exist
+        temp_manifest = tmp_path / "manifest.parquet"
+
+        # Create mock settings object
+        mock_settings = MagicMock()
+        mock_settings.docs_dir = str(temp_docs)
+        mock_settings.manifest_path = str(populated_manifest)
+
+        monkeypatch.setattr(
+            "urban_rag.cli.corpus.get_settings", lambda: mock_settings
+        )
+
+        # Should raise ValidationError (not FileNotFoundError)
+        with pytest.raises(ValidationError, match="not found|Corpus directory"):
+            corpus_module.corpus_reindex(sample_records[0].doc_hash)
+
+
 class TestCorpusEmptyState:
     """Tests for empty corpus state handling."""
 

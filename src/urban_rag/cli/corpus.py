@@ -165,17 +165,22 @@ def corpus_rm(doc_hash: str) -> None:
         log.info("removed_document_artifacts", doc_hash=doc_hash[:12], path=str(doc_dir))
         console.print(f"[green]✓[/green] Removed artifacts: {doc_dir}")
     else:
-        # Try to find by partial hash
-        found = False
-        for d in docs_dir.iterdir():
-            if d.is_dir() and (doc_hash.startswith(d.name) or d.name.startswith(doc_hash)):
-                shutil.rmtree(d)
-                log.info("removed_document_artifacts", doc_hash=doc_hash[:12], path=str(d))
-                console.print(f"[green]✓[/green] Removed artifacts: {d}")
-                found = True
-                break
-        if not found:
-            log.warning("artifacts_not_found", doc_hash=doc_hash[:12])
+        # docs_dir may not exist — handle gracefully
+        if not docs_dir.exists():
+            log.warning("docs_dir_not_found", doc_hash=doc_hash[:12], docs_dir=str(docs_dir))
+            console.print(f"[yellow]![/yellow] Docs directory not found: {docs_dir}")
+        else:
+            # Try to find by partial hash
+            found = False
+            for d in docs_dir.iterdir():
+                if d.is_dir() and (doc_hash.startswith(d.name) or d.name.startswith(doc_hash)):
+                    shutil.rmtree(d)
+                    log.info("removed_document_artifacts", doc_hash=doc_hash[:12], path=str(d))
+                    console.print(f"[green]✓[/green] Removed artifacts: {d}")
+                    found = True
+                    break
+            if not found:
+                log.warning("artifacts_not_found", doc_hash=doc_hash[:12])
 
     # Remove from manifest
     updated_records = [r for r in records if r.doc_hash != record.doc_hash]
@@ -216,6 +221,12 @@ def corpus_reindex(doc_hash: str) -> None:
     doc_dir = docs_dir / doc_hash[:64]
 
     if not doc_dir.exists():
+        # docs_dir may not exist — handle gracefully
+        if not docs_dir.exists():
+            raise ValidationError(
+                f"Corpus directory not found: {docs_dir}. "
+                "The document may not have been ingested yet."
+            )
         # Try to find by partial hash
         for d in docs_dir.iterdir():
             if d.is_dir() and (doc_hash.startswith(d.name) or d.name.startswith(doc_hash)):
