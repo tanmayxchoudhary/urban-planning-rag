@@ -30,8 +30,13 @@ def configure_logging(
     settings = get_settings()
 
     # Set default context variables that will be merged into every log event
+    # query_id defaults to "n/a" for cases where no specific query context exists
     structlog.contextvars.clear_contextvars()
-    structlog.contextvars.bind_contextvars(corpus_version=corpus_version, service=service)
+    structlog.contextvars.bind_contextvars(
+        query_id="n/a",
+        corpus_version=corpus_version,
+        service=service,
+    )
 
     structlog.configure(
         processors=[
