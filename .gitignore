@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# env / secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*credentials*
+*secrets*
+
+# local/generated data
+.moshad/
+data/
+!data/README.md
+!data/samples/
+!data/samples/**
+*.db
+*.sqlite
+*.sqlite3
+*.parquet
+*.pkl
+*.pickle
+
+# logs/editor
+*.log
+.DS_Store
+.vscode/
+.idea/

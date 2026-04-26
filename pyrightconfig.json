@@ -5,5 +5,7 @@
   "reportMissingImports": "error",
   "reportMissingTypeStubs": false,
   "include": ["src"],
-  "exclude": ["**/__pycache__", "**/.venv"]
+  "exclude": ["**/__pycache__", "**/.venv"],
+  "venvPath": ".",
+  "venv": ".venv"
 }
