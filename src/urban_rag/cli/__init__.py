@@ -8,10 +8,23 @@ import typer
 from rich.console import Console
 
 from urban_rag.common.logging import configure_logging, get_logger
+from urban_rag.common.settings import get_settings
+
+
+def _get_version() -> str:
+    """Return the application version string."""
+    return get_settings().app_version
 
 
 def main() -> None:
     """Main entry point for the urban-rag CLI."""
+    # Handle --version flag before Typer processes it
+    import sys
+
+    if "--version" in sys.argv or "-V" in sys.argv:
+        typer.echo(f"urban-rag {_get_version()}")
+        sys.exit(0)
+
     app = typer.Typer(
         name="urban-rag",
         help="Visual RAG system for Indian urban planning regulations",
@@ -99,16 +112,82 @@ def main() -> None:
         top_k: Annotated[
             int, typer.Option("--top-k", help="Number of candidates", min=1, max=50)
         ] = 5,
+        timeout: Annotated[
+            int,
+            typer.Option(
+                "--timeout", help="Query timeout in seconds (default: 60)"
+            ),
+        ] = 60,
     ) -> None:
         """Query the corpus with a question."""
+        import signal
+
+        from urban_rag.retrieve.orchestrator import retrieve
+
         console = Console()
-        console.print("[yellow]query command not yet implemented[/yellow]")
-        log.info(
-            "query_command_placeholder",
-            question=question,
-            retrieve_only=retrieve_only,
-            top_k=top_k,
-        )
+        log = get_logger(__name__)
+
+        # Set up a timeout handler
+        def timeout_handler(signum, frame):
+            console.print(f"\n[yellow]Query timed out after {timeout}s[/yellow]")
+            raise typer.Exit(code=124)
+
+        # Register the timeout signal if supported
+        if hasattr(signal, "SIGALRM"):
+            old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(timeout)
+
+        try:
+            result = retrieve(
+                query=question,
+                top_k=top_k,
+                use_rerank=not retrieve_only,  # Skip rerank in retrieve-only mode
+            )
+
+            console.print(f"\n[bold]Query:[/bold] {question}")
+            console.print(f"[bold]Strategy:[/bold] {result.retrieval_strategy}")
+            console.print(f"[bold]Latency:[/bold] {result.latency_ms}ms")
+
+            if result.flags:
+                flags_str = ", ".join(f"{k}={v}" for k, v in result.flags.items())
+                console.print(f"[bold]Flags:[/bold] {flags_str}")
+
+            if result.candidates:
+                console.print(
+                    f"\n[bold green]Top {len(result.candidates)} candidates:[/bold green]"
+                )
+                for i, candidate in enumerate(result.candidates, 1):
+                    channels = ", ".join(
+                        f"{ch}:{score:.3f}"
+                        for ch, score in candidate.channel_scores.items()
+                    )
+                    console.print(
+                        f"  [{i}] {candidate.page_id}  "
+                        f"score={candidate.score:.4f}  "
+                        f"channels={{{channels}}}"
+                    )
+                    if candidate.extracted_text_excerpt:
+                        excerpt = candidate.extracted_text_excerpt[:80].replace("\n", " ")
+                        console.print(f"      excerpt: {excerpt}...")
+            else:
+                console.print("\n[yellow]No candidates found.[/yellow]")
+
+            log.info(
+                "query_command_complete",
+                question=question[:50],
+                candidates=len(result.candidates),
+                latency_ms=result.latency_ms,
+            )
+
+        except Exception as e:
+            log.error("query_command_failed", question=question[:50], error=str(e))
+            console.print(f"[red]Query failed:[/red] {e}")
+            raise typer.Exit(code=1) from e
+        finally:
+            # Cancel the alarm if still pending
+            if hasattr(signal, "SIGALRM"):
+                signal.alarm(0)
+                signal.signal(signal.SIGALRM, old_handler)
 
     @app.command("version")
     def version_cmd() -> None:
