@@ -73,17 +73,17 @@ def validate_and_hash(pdf_path: Path) -> DocumentRecord:
     except OSError as e:
         raise ValidationError(f"Cannot read file {pdf_path}: {e}") from e
 
-    # ── 3. Reject files smaller than 1 KB ──────────────────────────────────
+    # ── 3. Verify PDF magic bytes FIRST ─────────────────────────────────────
+    if not file_bytes.startswith(b"%PDF"):
+        raise ValidationError(
+            f"Not a PDF (missing %PDF header): {pdf_path}"
+        )
+
+    # ── 4. Reject files smaller than 1 KB ──────────────────────────────────
     if len(file_bytes) < MIN_PDF_SIZE_BYTES:
         raise ValidationError(
             f"PDF too small ({len(file_bytes)} bytes): {pdf_path}. "
             f"Minimum accepted size is {MIN_PDF_SIZE_BYTES} bytes."
-        )
-
-    # ── 4. Verify PDF magic bytes ─────────────────────────────────────────
-    if not file_bytes.startswith(b"%PDF"):
-        raise ValidationError(
-            f"Not a PDF (missing %PDF header): {pdf_path}"
         )
 
     # ── 5. SHA256 content hash ──────────────────────────────────────────────

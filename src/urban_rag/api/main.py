@@ -351,6 +351,7 @@ async def ask(
     request: AskRequest,
     background_tasks: BackgroundTasks,
     http_request: Request,
+    response: Response,
 ) -> AskResponse:
     """Submit a question for async processing.
 
@@ -374,6 +375,12 @@ async def ask(
         )
 
     _record_request(client_ip)
+
+    # Add rate limit headers to successful response
+    response.headers.update(_rate_limit_headers(
+        RATE_LIMIT_PER_MINUTE - 1,
+        RATE_LIMIT_PER_DAY - 1
+    ))
 
     # Generate query_id
     query_id = f"q_{uuid.uuid4().hex[:12]}"

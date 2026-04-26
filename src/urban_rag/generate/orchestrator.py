@@ -309,14 +309,25 @@ async def answer(
     # Build Citation objects per VAL-API-031
     citations: list[Citation] = []
     for c in citations_list:
+        doc_hash = c["page_id"].split("#")[0] if "#" in c["page_id"] else ""
+        rerank_score = None
+        if 1 <= c["idx"] <= len(retrieval_result.candidates):
+            cand = retrieval_result.candidates[c["idx"] - 1]
+            rerank_score = cand.rerank_score
+
         citations.append(Citation(
             idx=c["idx"],
             doc_id=c["doc_id"],
+            doc_hash=doc_hash,
+            doc_filename="",
             page_id=c["page_id"],
             page_num=c["page_num"],
+            page_image_uri="",
             doc_title=c["doc_title"],
             section_title=c["section_title"],
+            section_path=[],
             score=c["score"],
+            rerank_score=rerank_score,
         ))
 
     # ── Determine confidence ───────────────────────────────────────────────

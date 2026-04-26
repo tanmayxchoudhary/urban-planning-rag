@@ -465,11 +465,16 @@ async def generate(
         Citation(
             idx=c["idx"],
             doc_id=c["doc_id"],
+            doc_hash=c["page_id"].split("#")[0] if "#" in c["page_id"] else "",
+            doc_filename="",
             page_id=c["page_id"],
             page_num=c["page_num"],
+            page_image_uri="",
             doc_title=c["doc_title"],
             section_title=c["section_title"],
+            section_path=[],
             score=c["score"],
+            rerank_score=None,
         )
         for c in citations_list
     ]

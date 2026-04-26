@@ -164,9 +164,31 @@ class TestValidateAndHash:
         with pytest.raises(ValidationError) as exc_info:
             validate_and_hash(txt_path)
 
-        assert "not a PDF" in str(exc_info.value.message).lower() or "pdf" in str(
-            exc_info.value.message
-        ).lower()
+        assert "not a pdf" in str(exc_info.value.message).lower()
+
+    def test_non_pdf_file_at_least_1kb_rejects_with_not_a_pdf_not_too_small(
+        self, isolated_docs_dir: Path, tmp_path: Path
+    ) -> None:
+        """A non-PDF file >= 1 KB must report 'not a PDF', not 'too small'.
+
+        Regression test: magic bytes must be checked before file size,
+        otherwise a non-PDF file >= 1 KB incorrectly raises 'PDF too small'.
+        """
+        large_non_pdf = tmp_path / "large_not_pdf.bin"
+        # Write >= 1 KB of non-PDF content (no %PDF header)
+        large_non_pdf.write_bytes(b"This is definitely not a PDF file content.\n" + b"X" * 1100)
+
+        with pytest.raises(ValidationError) as exc_info:
+            validate_and_hash(large_non_pdf)
+
+        error_msg = str(exc_info.value.message).lower()
+        # Must report "not a PDF", NOT "too small"
+        assert "not a pdf" in error_msg, (
+            f"Expected 'not a pdf' error, got: {exc_info.value.message}"
+        )
+        assert "too small" not in error_msg, (
+            f"Expected 'not a pdf' error, not 'too small': {exc_info.value.message}"
+        )
 
     def test_rejects_pdf_smaller_than_1kb(
         self, isolated_docs_dir: Path, tmp_path: Path

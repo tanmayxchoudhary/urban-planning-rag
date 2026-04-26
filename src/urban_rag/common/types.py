@@ -174,11 +174,22 @@ class Citation(BaseModel):
 
     idx: int = Field(..., ge=1, description="[1], [2], ...")
     doc_id: str = Field(...)
+    doc_hash: str = Field(default="", description="SHA256 of the source document")
+    doc_filename: str = Field(default="", description="Original filename of the source document")
     page_id: str = Field(...)
     page_num: int = Field(..., ge=1)
+    page_image_uri: str = Field(default="", description="URI to the rendered page image")
     doc_title: str = Field(default="")
     section_title: str | None = Field(default=None)
+    section_path: list[str] | None = Field(
+        default=None,
+        description='["Chapter 4","4.3 Land Use"] - breadcrumb path to section',
+    )
     score: float = Field(default=0.0)
+    rerank_score: float | None = Field(
+        default=None,
+        description="VLM rerank score if reranking was performed",
+    )
 
 
 class Answer(BaseModel):

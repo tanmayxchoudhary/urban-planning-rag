@@ -235,10 +235,23 @@ def corpus_reindex(doc_hash: str) -> None:
         else:
             raise ValidationError(f"No artifacts found for document: {doc_hash[:12]}...")
 
-    # Check for existing PNGs
-    png_files = list(doc_dir.glob("*.png"))
+    # Check for existing PNGs — first new layout, then legacy layout
+    pages_dir = doc_dir / "pages"
+    png_files = list(pages_dir.glob("*.png")) if pages_dir.exists() else []
+
     if not png_files:
-        raise ValidationError(f"No page PNGs found in {doc_dir}. Cannot reindex.")
+        # Fall back to legacy layout: data/page_images/*.png
+        settings = get_settings()
+        legacy_images_dir = Path(settings.docs_dir).parent / "page_images"
+        if legacy_images_dir.exists():
+            png_files = sorted(legacy_images_dir.glob("*.png"))
+
+    if not png_files:
+        msg = (
+            f"No page PNGs found for document {doc_hash[:12]}... "
+            f"in {pages_dir} or data/page_images/. Cannot reindex."
+        )
+        raise ValidationError(msg)
 
     console.print(f"[cyan]Reindexing document:[/cyan] {record.filename}")
     console.print(f"[dim]Using {len(png_files)} existing page PNGs[/dim]")

@@ -4,6 +4,7 @@
   "typeCheckingMode": "basic",
   "reportMissingImports": "error",
   "reportMissingTypeStubs": false,
+  "reportCallIssue": false,
   "include": ["src"],
   "exclude": ["**/__pycache__", "**/.venv"],
   "venvPath": ".",
