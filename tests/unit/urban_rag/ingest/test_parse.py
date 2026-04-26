@@ -16,6 +16,7 @@ from urban_rag.ingest.parse import (
     _is_empty_or_failed,
     _markdown_table_to_html,
     _parse_marker_sections,
+    _parse_marker_tables,
     parse_document,
 )
 
@@ -121,10 +122,62 @@ class TestMarkdownTableToHtml:
         assert "<td>A</td>" in result
         assert "<td>B</td>" in result
 
+    def test_multi_row_table(self) -> None:
+        result = _markdown_table_to_html("| Col A | Col B |\n|---|---|\n| A1 | B1 |")
+        assert "<td>Col A</td>" in result
+        assert "<td>Col B</td>" in result
+        assert "<td>A1</td>" in result
+        assert "<td>B1</td>" in result
+        # Should have 3 rows (header + separator + body)
+        assert result.count("<tr>") == 3
+
 
 # ---------------------------------------------------------------------------
-# Test _parse_marker_sections
+# Test _parse_marker_tables
 # ---------------------------------------------------------------------------
+
+class TestParseMarkerTables:
+    """Tests for Marker markdown table block extraction."""
+
+    def test_no_tables(self) -> None:
+        result = _parse_marker_tables("Just plain text without any tables.")
+        assert result == []
+
+    def test_single_single_line_table(self) -> None:
+        result = _parse_marker_tables("| Col A | Col B |")
+        assert len(result) == 1
+        assert "Col A" in result[0]
+        assert "Col B" in result[0]
+
+    def test_multi_row_table(self) -> None:
+        md = "| Col A | Col B |\n|---|---|\n| A1 | B1 |\n| A2 | B2 |"
+        result = _parse_marker_tables(md)
+        assert len(result) == 1
+        assert "Col A" in result[0]
+        assert "Col B" in result[0]
+        assert "| Col A | Col B |" in result[0]
+        assert "| A1 | B1 |" in result[0]
+        assert "| A2 | B2 |" in result[0]
+
+    def test_multiple_tables(self) -> None:
+        md = """| Table1 | Table1 |
+|---|---|
+| T1 | T1 |
+
+Some text between.
+
+| Table2 |
+|---|
+| T2 |"""
+        result = _parse_marker_tables(md)
+        assert len(result) == 2
+        assert "Table1" in result[0]
+        assert "Table2" in result[1]
+
+    def test_table_with_separator_line_only(self) -> None:
+        # Single line tables (just header, no separator/body) are still valid
+        result = _parse_marker_tables("| Col A | Col B |")
+        assert len(result) == 1
 
 class TestParseMarkerSections:
     """Tests for Marker section tree parsing."""

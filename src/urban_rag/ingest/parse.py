@@ -125,6 +125,9 @@ def parse_document(pdf_path: Path, doc_hash: str) -> dict[str, object]:
 
     # Tag with parser metadata
     parsed_result["_parser"] = parser_used
+    # Extract version from parsed result if available, default to "unknown"
+    version = parsed_result.get("version", "unknown")
+    parsed_result["_parser_version"] = str(version)
 
     # ── Stage 4: Persist to docs/<hash>/parsed.json ───────────────────────
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -395,16 +398,15 @@ def _parse_with_marker(pdf_path: Path, doc_hash: str) -> tuple[dict[str, object]
     sections = _parse_marker_sections(full_text)
 
     # Marker doesn't produce structured tables by default, so we extract
-    # table-like blocks from markdown (lines starting with |)
-    for line in full_text.split("\n"):
-        stripped = line.strip()
-        if stripped.startswith("|") and stripped.endswith("|"):
-            tables.append({
-                "table_id": f"marker_table_{len(tables):04d}",
-                "page_num": 1,
-                "html": _markdown_table_to_html(stripped),
-                "bbox": [],
-            })
+    # table-like blocks from markdown (proper multi-line markdown table parsing)
+    tables_raw = _parse_marker_tables(full_text)
+    for i, table_text in enumerate(tables_raw):
+        tables.append({
+            "table_id": f"marker_table_{i:04d}",
+            "page_num": 1,
+            "html": _markdown_table_to_html(table_text),
+            "bbox": [],
+        })
 
     parsed: dict[str, object] = {
         "version": "marker-v1",
@@ -463,13 +465,65 @@ def _parse_marker_sections(full_text: str) -> list[dict[str, object]]:
     return sections
 
 
-def _markdown_table_to_html(md_line: str) -> str:
-    """Convert a single markdown table row to minimal HTML."""
-    cols = [c.strip() for c in md_line.strip("|").split("|")]
-    if not cols:
+def _markdown_table_to_html(md_table: str) -> str:
+    """Convert a multi-line markdown table to minimal HTML.
+
+    Args:
+        md_table: A complete markdown table (header row, separator row, body rows).
+                  Lines are separated by newlines.
+
+    Returns:
+        An HTML table string.
+    """
+    lines = md_table.strip().split("\n")
+    if not lines:
         return "<table><tr><td></td></tr></table>"
-    cells = "".join(f"<td>{c}</td>" for c in cols)
-    return f"<table><tr>{cells}</tr></table>"
+
+    rows_html = ""
+    for line in lines:
+        cols = [c.strip() for c in line.strip("|").split("|")]
+        cells = "".join(f"<td>{c}</td>" for c in cols)
+        rows_html += f"<tr>{cells}</tr>"
+
+    return f"<table>{rows_html}</table>"
+
+
+def _parse_marker_tables(full_text: str) -> list[str]:
+    """Parse Marker markdown output and extract complete multi-line table blocks.
+
+    A markdown table consists of:
+    - A header row: columns separated by |
+    - A separator row: ---|---|... or similar
+    - Zero or more body rows
+
+    This function identifies table blocks by finding sequences of lines that
+    start and end with |, which is characteristic of all three row types.
+
+    Returns:
+        A list of complete markdown table strings (header + separator + body rows
+        for each table found in the text).
+    """
+    tables: list[str] = []
+    current_table_lines: list[str] = []
+
+    for line in full_text.split("\n"):
+        stripped = line.strip()
+        # A markdown table line starts and ends with |
+        if stripped.startswith("|") and stripped.endswith("|"):
+            current_table_lines.append(stripped)
+        else:
+            # End of a table block (non-table line)
+            if current_table_lines:
+                # Only emit if we have at least a header and separator
+                if len(current_table_lines) >= 1:
+                    tables.append("\n".join(current_table_lines))
+                current_table_lines = []
+
+    # Don't forget the last table if file ends with one
+    if current_table_lines:
+        tables.append("\n".join(current_table_lines))
+
+    return tables
 
 
 # ---------------------------------------------------------------------------
