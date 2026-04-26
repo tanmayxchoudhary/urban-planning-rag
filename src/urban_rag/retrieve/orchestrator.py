@@ -116,6 +116,7 @@ def _retrieve_visual_with_timeout(
     top_k: int,
     timeout: float,
     executor: ThreadPoolExecutor,
+    filters: dict[str, str] | None = None,
 ) -> tuple[RetrievalResult | None, dict[str, Any]]:
     """Retrieve from visual channel with timeout protection.
 
@@ -124,6 +125,7 @@ def _retrieve_visual_with_timeout(
         top_k: Number of candidates to request.
         timeout: Timeout in seconds.
         executor: Thread pool for running the channel.
+        filters: Optional payload filters for Qdrant.
 
     Returns:
         Tuple of (result, info) where result is None on failure.
@@ -132,7 +134,7 @@ def _retrieve_visual_with_timeout(
     info: dict[str, Any] = {"timed_out": False, "error": None, "degraded": False}
 
     try:
-        future = executor.submit(visual.retrieve_visual, query, top_k)
+        future = executor.submit(visual.retrieve_visual, query, top_k, filters=filters)
         result = future.result(timeout=timeout)
         return result, info
     except FuturesTimeoutError:
@@ -156,6 +158,7 @@ def _retrieve_text_with_timeout(
     top_k: int,
     timeout: float,
     executor: ThreadPoolExecutor,
+    filters: dict[str, str] | None = None,
 ) -> tuple[RetrievalResult | None, dict[str, Any]]:
     """Retrieve from text channel with timeout protection.
 
@@ -164,6 +167,7 @@ def _retrieve_text_with_timeout(
         top_k: Number of candidates to request.
         timeout: Timeout in seconds.
         executor: Thread pool for running the channel.
+        filters: Optional payload filters for Qdrant.
 
     Returns:
         Tuple of (result, info) where result is None on failure.
@@ -171,7 +175,7 @@ def _retrieve_text_with_timeout(
     info: dict[str, Any] = {"timed_out": False, "error": None, "degraded": False}
 
     try:
-        future = executor.submit(text.retrieve_text, query, top_k)
+        future = executor.submit(text.retrieve_text, query, top_k, filters=filters)
         result = future.result(timeout=timeout)
         return result, info
     except FuturesTimeoutError:
@@ -195,6 +199,7 @@ def _retrieve_sparse_with_timeout(
     top_k: int,
     timeout: float,
     executor: ThreadPoolExecutor,
+    filters: dict[str, str] | None = None,
 ) -> tuple[RetrievalResult | None, dict[str, Any]]:
     """Retrieve from sparse channel with timeout protection.
 
@@ -203,6 +208,7 @@ def _retrieve_sparse_with_timeout(
         top_k: Number of candidates to request.
         timeout: Timeout in seconds.
         executor: Thread pool for running the channel.
+        filters: Optional payload filters for Qdrant.
 
     Returns:
         Tuple of (result, info) where result is None on failure.
@@ -210,7 +216,7 @@ def _retrieve_sparse_with_timeout(
     info: dict[str, Any] = {"timed_out": False, "error": None, "degraded": False}
 
     try:
-        future = executor.submit(sparse.retrieve_sparse, query, top_k)
+        future = executor.submit(sparse.retrieve_sparse, query, top_k, filters=filters)
         result = future.result(timeout=timeout)
         return result, info
     except FuturesTimeoutError:
@@ -302,6 +308,7 @@ def retrieve(
             top_k,
             channel_timeout,
             executor,
+            filters,
         )
         text_future = executor.submit(
             _retrieve_text_with_timeout,
@@ -309,6 +316,7 @@ def retrieve(
             top_k,
             channel_timeout,
             executor,
+            filters,
         )
         sparse_future = executor.submit(
             _retrieve_sparse_with_timeout,
@@ -316,6 +324,7 @@ def retrieve(
             top_k,
             channel_timeout,
             executor,
+            filters,
         )
 
         # Wait for all channels to complete (or timeout)
@@ -501,7 +510,7 @@ async def retrieve_async(
         info: dict[str, Any] = {"timed_out": False, "error": None, "degraded": False}
         try:
             result = await asyncio.wait_for(
-                asyncio.to_thread(visual.retrieve_visual, primary_query, top_k),
+                asyncio.to_thread(visual.retrieve_visual, primary_query, top_k, filters=filters),
                 timeout=channel_timeout,
             )
             return result, info
@@ -524,7 +533,7 @@ async def retrieve_async(
         info: dict[str, Any] = {"timed_out": False, "error": None, "degraded": False}
         try:
             result = await asyncio.wait_for(
-                asyncio.to_thread(text.retrieve_text, primary_query, top_k),
+                asyncio.to_thread(text.retrieve_text, primary_query, top_k, filters=filters),
                 timeout=channel_timeout,
             )
             return result, info
@@ -547,7 +556,7 @@ async def retrieve_async(
         info: dict[str, Any] = {"timed_out": False, "error": None, "degraded": False}
         try:
             result = await asyncio.wait_for(
-                asyncio.to_thread(sparse.retrieve_sparse, primary_query, top_k),
+                asyncio.to_thread(sparse.retrieve_sparse, primary_query, top_k, filters=filters),
                 timeout=channel_timeout,
             )
             return result, info
