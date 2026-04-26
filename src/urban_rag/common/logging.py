@@ -11,14 +11,15 @@ import sys
 from typing import Any
 
 import structlog
+from structlog.stdlib import ProcessorFormatter
 
 from urban_rag.common.settings import get_settings
 
 
 def configure_logging(
     *,
-    corpus_version: str | None = None,
-    service: str | None = None,
+    corpus_version: str = "unversioned",
+    service: str = "unknown",
 ) -> None:
     """Configure structlog for the application.
 
@@ -28,18 +29,9 @@ def configure_logging(
     """
     settings = get_settings()
 
-    logging.basicConfig(
-        format="%(message)s",
-        stream=sys.stdout,
-        level=getattr(logging, settings.log_level.upper(), logging.INFO),
-    )
-
     # Set default context variables that will be merged into every log event
     structlog.contextvars.clear_contextvars()
-    if corpus_version is not None:
-        structlog.contextvars.bind_contextvars(corpus_version=corpus_version)
-    if service is not None:
-        structlog.contextvars.bind_contextvars(service=service)
+    structlog.contextvars.bind_contextvars(corpus_version=corpus_version, service=service)
 
     structlog.configure(
         processors=[
@@ -53,6 +45,30 @@ def configure_logging(
         logger_factory=structlog.PrintLoggerFactory(),
         cache_logger_on_first_use=True,
     )
+
+    # Also configure standard library logging to use structlog processors
+    # so that logging.getLogger() also outputs structured JSON
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setFormatter(
+        ProcessorFormatter(
+            foreign_pre_chain=[
+                structlog.contextvars.merge_contextvars,
+                structlog.processors.add_log_level,
+                structlog.processors.TimeStamper(fmt="iso"),
+            ],
+            processors=[
+                structlog.contextvars.merge_contextvars,
+                structlog.processors.add_log_level,
+                structlog.processors.TimeStamper(fmt="iso"),
+                ProcessorFormatter.remove_processors_meta,
+                structlog.processors.JSONRenderer(),
+            ],
+        )
+    )
+
+    root_logger = logging.getLogger()
+    root_logger.handlers = [handler]
+    root_logger.setLevel(getattr(logging, settings.log_level.upper(), logging.INFO))
 
 
 def get_logger(
