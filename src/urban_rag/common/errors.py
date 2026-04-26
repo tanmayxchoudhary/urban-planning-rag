@@ -83,3 +83,10 @@ class ParseError(UrbanRagError):
 
     code = "parse_error"
     message = "Document parsing failed"
+
+
+class IndexingError(UrbanRagError):
+    """Raised when indexing fails."""
+
+    code = "indexing_error"
+    message = "Indexing failed"
