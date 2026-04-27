@@ -1,0 +1,80 @@
+# Prometheus alert rules for Urban Planning RAG
+# Per VAL-OPS-010, VAL-OPS-011, VAL-OPS-018, VAL-OPS-022
+#
+# P0: 5xx > 1% for 5 min
+# P1: faithfulness < 0.80 for 1 hour (via eval; alert here for monitoring)
+# P2: cost/query > $0.05 sustained
+# P3: embed cold-start > 60s rolling average
+
+groups:
+  - name: urban_rag_operational
+    rules:
+      # VAL-OPS-010: P0 alert — 5xx error rate > 1% for 5 minutes
+      - alert: UrbanRagHighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total[5m]))
+          ) > 0.01
+        for: 5m
+        labels:
+          severity: critical
+          tier: gateway
+        annotations:
+          summary: "High 5xx error rate on Urban RAG gateway"
+          description: "5xx error rate is {{ $value | humanizePercentage }} (threshold: 1%) for 5 minutes."
+          runbook_url: "docs/runbooks/high_error_rate.md"
+
+      # VAL-OPS-018: P2 alert — cost per query > $0.05 sustained
+      - alert: UrbanRagHighQueryCost
+        expr: |
+          (sum(rate(cost_usd_total[1h])) / sum(rate(query_total[1h]))) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          tier: gateway
+        annotations:
+          summary: "High cost per query on Urban RAG"
+          description: "Cost per query is ${{ $value | humanize }} (threshold: $0.05) sustained for 10 minutes."
+          runbook_url: "docs/runbooks/high_cost.md"
+
+      # VAL-OPS-020: Scrape target health
+      - alert: UrbanRagTargetDown
+        expr: up{job=~"urban-rag-.*"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          tier: infrastructure
+        annotations:
+          summary: "Prometheus scrape target is down"
+          description: "Scrape target {{ $labels.job }} has been down for 2 minutes."
+          runbook_url: "docs/runbooks/scrape_target_down.md"
+
+  - name: urban_rag_latency
+    rules:
+      # p95 query latency > 10s
+      - alert: UrbanRagHighLatency
+        expr: histogram_quantile(0.95, sum(rate(query_latency_seconds_bucket[5m])) by (le)) > 10
+        for: 5m
+        labels:
+          severity: warning
+          tier: gateway
+        annotations:
+          summary: "High query latency on Urban RAG"
+          description: "p95 query latency is {{ $value }}s (threshold: 10s) for 5 minutes."
+          runbook_url: "docs/runbooks/high_latency.md"
+
+  - name: urban_rag_retrieval
+    rules:
+      # Qdrant retrieval latency p95 > 2s per channel
+      - alert: UrbanRagQdrantHighLatency
+        expr: histogram_quantile(0.95, sum(rate(qdrant_latency_seconds_bucket[5m])) by (le, channel)) > 2
+        for: 5m
+        labels:
+          severity: warning
+          tier: retrieval
+        annotations:
+          summary: "High Qdrant retrieval latency for channel {{ $labels.channel }}"
+          description: "p95 Qdrant latency for {{ $labels.channel }} is {{ $value }}s (threshold: 2s)."
+          runbook_url: "docs/runbooks/qdrant_high_latency.md"

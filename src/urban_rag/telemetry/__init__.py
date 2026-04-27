@@ -1,23 +1,41 @@
 """OpenTelemetry traces + Prometheus metrics."""
 
+from urban_rag.telemetry.metrics import (
+    get_content_type,
+    get_metrics,
+    record_cost,
+    record_latency,
+    record_qdrant_latency,
+    record_query,
+    record_retrieval_candidates,
+    record_tokens,
+)
 from urban_rag.telemetry.tracing import (
-    get_tracer,
-    make_span,
-    get_current_trace_url,
     get_current_trace_id,
+    get_current_trace_url,
+    get_tracer,
     is_tracing_enabled,
-    verify_tracing_setup,
-    trace_retrieval_span,
+    make_span,
     trace_generation_span,
+    trace_retrieval_span,
+    verify_tracing_setup,
 )
 
 __all__ = [
-    "get_tracer",
-    "make_span",
-    "get_current_trace_url",
+    "get_content_type",
     "get_current_trace_id",
+    "get_current_trace_url",
+    "get_metrics",
+    "get_tracer",
     "is_tracing_enabled",
-    "verify_tracing_setup",
-    "trace_retrieval_span",
+    "make_span",
+    "record_cost",
+    "record_latency",
+    "record_qdrant_latency",
+    "record_query",
+    "record_retrieval_candidates",
+    "record_tokens",
     "trace_generation_span",
+    "trace_retrieval_span",
+    "verify_tracing_setup",
 ]

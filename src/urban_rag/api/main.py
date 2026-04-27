@@ -46,6 +46,13 @@ from urban_rag.common.types import (
 )
 from urban_rag.generate.orchestrator import answer
 from urban_rag.retrieve.orchestrator import retrieve_async
+from urban_rag.telemetry.metrics import (
+    QUERY_TOTAL,
+    get_content_type,
+    get_metrics,
+    record_cost,
+    record_latency,
+)
 from urban_rag.telemetry.tracing import get_current_trace_url, get_tracer
 
 if TYPE_CHECKING:
@@ -502,8 +509,12 @@ async def ask_stream(query_id: str) -> StreamingResponse:
 
     async def event_stream() -> AsyncGenerator[str, None]:
         """Generate SSE events."""
+        import time
+
         question = entry.get("question", "")
         mode = entry.get("mode", "fast")
+        query_start_time = time.time()
+        terminal_status = "error"  # default to error; updated on success/refusal
 
         # Start root query span with required attributes per PLAN.md §13.1
         tracer = get_tracer()
@@ -599,6 +610,14 @@ async def ask_stream(query_id: str) -> StreamingResponse:
                 elif event_name == "GenerationCompletedEvent":
                     # Store the completed answer and update status
                     _query_store[query_id]["status"] = "completed"
+                    terminal_status = "success"
+                    # Record metrics: cost from diagnostics
+                    diagnostics = getattr(event, "diagnostics", None)
+                    if diagnostics:
+                        diag_dict = _safe_model_dump(diagnostics)
+                        cost_usd = diag_dict.get("cost_usd", 0.0)
+                        if cost_usd:
+                            record_cost(mode=mode, cost_usd=cost_usd)
                     _query_store[query_id]["answer"] = {
                         "answer_markdown": getattr(event, "answer_markdown", ""),
                         "citations": [c.model_dump() for c in getattr(event, "citations", [])],
@@ -616,6 +635,7 @@ async def ask_stream(query_id: str) -> StreamingResponse:
                     })
                 elif event_name == "RefusedEvent":
                     _query_store[query_id]["status"] = "refused"
+                    terminal_status = "refused"
                     _query_store[query_id]["refused_reason"] = getattr(event, "reason", "unknown")
                     _query_store[query_id]["refused_message"] = getattr(event, "message", "")
                     yield _format_sse("refused", {
@@ -624,6 +644,7 @@ async def ask_stream(query_id: str) -> StreamingResponse:
                     })
                 elif event_name == "ErrorEvent":
                     _query_store[query_id]["status"] = "error"
+                    terminal_status = "error"
                     _query_store[query_id]["error_code"] = getattr(event, "code", INTERNAL_CODE)
                     _query_store[query_id]["error_message"] = getattr(event, "message", "")
                     _query_store[query_id]["error_stage"] = getattr(event, "stage", "generation")
@@ -637,6 +658,13 @@ async def ask_stream(query_id: str) -> StreamingResponse:
             yield _format_sse("done", {"query_id": query_id})
 
         finally:
+            # Record terminal metrics
+            elapsed_seconds = time.time() - query_start_time
+            record_latency(mode=mode, status=terminal_status, latency_seconds=elapsed_seconds)
+            # Update query counter: "started" is replaced with terminal status
+            # Note: we increment the terminal status directly; started was counted at ask()
+            QUERY_TOTAL.labels(mode=mode, status=terminal_status).inc()
+
             # End the root span and record trace URL
             root_ctx.__exit__(None, None, None)
             trace_url = get_current_trace_url()
@@ -1012,6 +1040,31 @@ async def healthz() -> HealthzResponse:
         status="ok",
         version=settings.app_version,
         corpus_version="v0.1.0",  # TODO: wire to actual corpus version
+    )
+
+
+# ---------------------------------------------------------------------------
+# Endpoint: GET /metrics (Prometheus)
+# ---------------------------------------------------------------------------
+
+
+@app.get(
+    "/metrics",
+    tags=["observability"],
+    summary="Prometheus metrics endpoint",
+    responses={200: {"description": "Prometheus metrics in text exposition format"}},
+    include_in_schema=True,
+)
+async def metrics() -> Response:
+    """Expose Prometheus metrics for scraping.
+
+    Per VAL-OPS-008 and VAL-OPS-020: this endpoint exposes query_total,
+    query_latency_seconds, qdrant_latency_seconds, and cost_usd counters
+    for Prometheus scraping.
+    """
+    return Response(
+        content=get_metrics(),
+        media_type=get_content_type(),
     )
 
 

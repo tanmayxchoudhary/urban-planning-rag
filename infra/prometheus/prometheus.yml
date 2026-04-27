@@ -1,0 +1,41 @@
+# Prometheus configuration for Urban Planning RAG
+# Per VAL-OPS-020: Prometheus scrape targets are configured and healthy
+#
+# Usage: prometheus --config.file=infra/prometheus/prometheus.yml
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files:
+  - "alert_rules.yml"  # Alert rules per VAL-OPS-010, VAL-OPS-011, VAL-OPS-018, VAL-OPS-022
+
+scrape_configs:
+  # API Gateway — Urban RAG
+  - job_name: "urban-rag-gateway"
+    static_configs:
+      - targets: ["localhost:3100"]
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Embed Service (if running separately on 3102)
+  - job_name: "urban-rag-embed"
+    static_configs:
+      - targets: ["localhost:3102"]
+    metrics_path: "/metrics"
+    scrape_interval: 15s
+    scrape_timeout: 10s
+
+  # Qdrant vector database
+  - job_name: "qdrant"
+    static_configs:
+      - targets: ["localhost:3103"]
+    metrics_path: "/metrics"
+    scrape_interval: 30s
+    scrape_timeout: 15s

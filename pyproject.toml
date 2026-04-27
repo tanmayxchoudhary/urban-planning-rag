@@ -34,6 +34,7 @@ dependencies = [
     "ragas>=0.4.0",
     "litellm>=1.0.0",
     "langfuse>=2.0.0",
+    "prometheus-client>=0.21.0",
 ]
 
 [project.optional-dependencies]

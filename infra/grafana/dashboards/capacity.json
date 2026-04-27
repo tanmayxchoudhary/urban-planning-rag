@@ -1,0 +1,175 @@
+{
+  "title": "Urban RAG — Capacity Dashboard",
+  "uid": "urban-rag-capacity",
+  "version": 1,
+  "refresh": "1m",
+  "panels": [
+    {
+      "title": "Queries per Minute (last hour)",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 0, "w": 12, "h": 6},
+      "targets": [
+        {
+          "expr": "sum(rate(query_total[1m]))",
+          "legendFormat": "qpm",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "title": "Cumulative Queries",
+      "type": "timeseries",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 6},
+      "targets": [
+        {
+          "expr": "sum(query_total)",
+          "legendFormat": "total queries",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "title": "Token Throughput (tokens/sec)",
+      "type": "timeseries",
+      "gridPos": {"x": 0, "y": 6, "w": 8, "h": 6},
+      "targets": [
+        {
+          "expr": "sum(rate(tokens_total{token_type=\"prompt\"}[5m])) + sum(rate(tokens_total{token_type=\"output\"}[5m]))",
+          "legendFormat": "tokens/sec",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "title": "Cumulative Cost (USD)",
+      "type": "timeseries",
+      "gridPos": {"x": 8, "y": 6, "w": 8, "h": 6},
+      "targets": [
+        {
+          "expr": "sum(cost_usd_total)",
+          "legendFormat": "total cost (USD)",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "title": "Daily Cost Projection",
+      "type": "gauge",
+      "gridPos": {"x": 16, "y": 6, "w": 8, "h": 6},
+      "targets": [
+        {
+          "expr": "sum(increase(cost_usd_total[1h])) * 24",
+          "legendFormat": "projected daily cost",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "min": 0,
+          "max": 50,
+          "thresholds": {
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 10, "color": "yellow"},
+              {"value": 30, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "p95 Latency vs SLO (4s)",
+      "type": "gauge",
+      "gridPos": {"x": 0, "y": 12, "w": 6, "h": 6},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(query_latency_seconds_bucket[5m])) by (le))",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0,
+          "max": 10,
+          "thresholds": {
+            "steps": [
+              {"value": 0, "color": "green"},
+              {"value": 2, "color": "yellow"},
+              {"value": 4, "color": "red"}
+            ]
+          }
+        }
+      }
+    },
+    {
+      "title": "Requests per Second (Gateway)",
+      "type": "timeseries",
+      "gridPos": {"x": 6, "y": 12, "w": 9, "h": 6},
+      "targets": [
+        {
+          "expr": "sum(rate(query_total[1m])) / 60",
+          "legendFormat": "req/sec",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    },
+    {
+      "title": "Qdrant Query Rate (per channel)",
+      "type": "timeseries",
+      "gridPos": {"x": 15, "y": 12, "w": 9, "h": 6},
+      "targets": [
+        {
+          "expr": "sum(rate(qdrant_latency_seconds_count[5m])) by (channel)",
+          "legendFormat": "{{channel}} qps",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "ops",
+          "color": {"mode": "palette-classic"}
+        }
+      }
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  },
+  "schemaVersion": 38
+}
