@@ -1,9 +1,11 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useStreamingQuery } from "@/hooks/useStreamingQuery";
 import CitationChip from "@/components/CitationChip";
+import CitationLightbox from "@/components/CitationLightbox";
+import FeedbackWidget from "@/components/FeedbackWidget";
 import { Citation, CitationCandidate } from "@/lib/sse-types";
 
 interface QueryPageProps {
@@ -24,6 +26,8 @@ export default function QueryPage({ params }: QueryPageProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [cachedResult, setCachedResult] = useState<CachedResult | null>(null);
   const [question, setQuestion] = useState("");
+  const [selectedCitationIdx, setSelectedCitationIdx] = useState<number | null>(null);
+  const chipRefs = useRef<Record<number, HTMLButtonElement | null>>({});
 
   // Try to load from localStorage first (VAL-WEB-008)
   useEffect(() => {
@@ -63,6 +67,15 @@ export default function QueryPage({ params }: QueryPageProps) {
   const displayCandidates = cachedResult
     ? cachedResult.candidates
     : candidates;
+
+  // Lightbox open/close handlers
+  const handleOpenLightbox = useCallback((idx: number) => {
+    setSelectedCitationIdx(idx);
+  }, []);
+
+  const handleCloseLightbox = useCallback(() => {
+    setSelectedCitationIdx(null);
+  }, []);
 
   // Keyboard accessibility
   useEffect(() => {
@@ -108,6 +121,17 @@ export default function QueryPage({ params }: QueryPageProps) {
           </h1>
         </section>
 
+        {/* Lightbox */}
+        {selectedCitationIdx !== null && displayCitations[selectedCitationIdx] && (
+          <CitationLightbox
+            citation={displayCitations[selectedCitationIdx]}
+            index={selectedCitationIdx + 1}
+            isOpen={true}
+            onClose={handleCloseLightbox}
+            triggerRef={{ current: chipRefs.current[selectedCitationIdx] } as React.RefObject<HTMLElement>}
+          />
+        )}
+
         {/* Results */}
         {isStreaming && !cachedResult && (
           <section aria-label="Streaming results" className="mb-8">
@@ -123,6 +147,7 @@ export default function QueryPage({ params }: QueryPageProps) {
                       key={candidate.page_id}
                       candidate={candidate}
                       index={idx + 1}
+                      onClick={handleOpenLightbox}
                     />
                   ))}
                 </div>
@@ -176,6 +201,7 @@ export default function QueryPage({ params }: QueryPageProps) {
                         section_title: citation.section_path.join(" > ") || null,
                       }}
                       index={idx + 1}
+                      onClick={handleOpenLightbox}
                     />
                   ))}
                 </div>
@@ -190,6 +216,11 @@ export default function QueryPage({ params }: QueryPageProps) {
                   dangerouslySetInnerHTML={{ __html: displayText }}
                 />
               </div>
+            </div>
+
+            {/* Feedback widget (VAL-WEB-014, VAL-WEB-015) */}
+            <div className="mt-6">
+              <FeedbackWidget queryId={query_id} />
             </div>
 
             {/* Actions */}
