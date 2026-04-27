@@ -244,8 +244,9 @@ class TestAPIEndpoints:
         # Should return 200 with error detail (not 404)
         assert response.status_code == 200
         data = response.json()
-        assert "detail" in data
-        assert data["detail"]["code"] == "refused"
+        # Response is wrapped in 'error' key per UrbanRagError envelope
+        assert "error" in data
+        assert data["error"]["code"] == "refused"
 
     def test_get_answer_error_returns_http_status_from_store(self):
         """GET /v1/ask/{id} for error query returns stored HTTP status."""
