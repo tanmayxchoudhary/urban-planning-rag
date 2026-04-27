@@ -38,6 +38,7 @@ import structlog
 from urban_rag.common.errors import ServiceUnavailableError
 from urban_rag.common.types import RetrievalResult
 from urban_rag.retrieve import fusion, rerank, sparse, text, visual
+from urban_rag.telemetry.tracing import get_tracer, trace_retrieval_span
 
 logger = structlog.get_logger(__name__, service="retrieve-orchestrator")
 
@@ -498,6 +499,18 @@ async def retrieve_async(
     expanded_queries = expand_query(query, num_variants=DEFAULT_NUM_EXPANSION_VARIANTS)
     expansion_ms = int((time.perf_counter() - expansion_start) * 1000)
 
+    # Trace query_expansion span
+    tracer = get_tracer()
+    with tracer.start_as_current_span(
+        "query_expansion",
+        attributes={
+            "query": query[:200],
+            "expanded_queries": expanded_queries,
+            "expansion_ms": expansion_ms,
+        },
+    ):
+        pass
+
     logger.info("query_expansion_complete", variants=len(expanded_queries))  # type: ignore
 
     # ── Step 2: Parallel fan-out using asyncio ─────────────────────────────
@@ -508,71 +521,140 @@ async def retrieve_async(
     # Run channels concurrently with timeout using asyncio.wait_for
     async def run_visual() -> tuple[RetrievalResult | None, dict[str, Any]]:
         info: dict[str, Any] = {"timed_out": False, "error": None, "degraded": False}
+        chan_start = time.perf_counter()
         try:
             result = await asyncio.wait_for(
                 asyncio.to_thread(visual.retrieve_visual, primary_query, top_k, filters=filters),
                 timeout=channel_timeout,
+            )
+            latency_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "visual_search",
+                candidates_count=len(result.candidates) if result else 0,
+                latency_ms=latency_ms,
+                extra_attrs={"channel": "visual"},
             )
             return result, info
         except TimeoutError:
             info["timed_out"] = True
             info["error"] = "Visual channel timed out"
             logger.warning("visual_channel_timeout", query=query[:50])
+            elapsed_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "visual_search", 0, elapsed_ms,
+                {"channel": "visual", "timed_out": True},
+            )
             return None, info
         except ServiceUnavailableError as e:
             info["degraded"] = True
             info["error"] = str(e)
             logger.warning("visual_channel_unavailable", error=str(e))
+            elapsed_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "visual_search", 0, elapsed_ms,
+                {"channel": "visual", "degraded": True},
+            )
             return None, info
         except Exception as e:
             info["error"] = str(e)
             logger.warning("visual_channel_error", error=str(e))
+            elapsed_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "visual_search", 0, elapsed_ms,
+                {"channel": "visual", "error": str(e)},
+            )
             return None, info
 
     async def run_text() -> tuple[RetrievalResult | None, dict[str, Any]]:
         info: dict[str, Any] = {"timed_out": False, "error": None, "degraded": False}
+        chan_start = time.perf_counter()
         try:
             result = await asyncio.wait_for(
                 asyncio.to_thread(text.retrieve_text, primary_query, top_k, filters=filters),
                 timeout=channel_timeout,
+            )
+            latency_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "text_search",
+                candidates_count=len(result.candidates) if result else 0,
+                latency_ms=latency_ms,
+                extra_attrs={"channel": "text"},
             )
             return result, info
         except TimeoutError:
             info["timed_out"] = True
             info["error"] = "Text channel timed out"
             logger.warning("text_channel_timeout", query=query[:50])
+            elapsed_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "text_search", 0, elapsed_ms,
+                {"channel": "text", "timed_out": True},
+            )
             return None, info
         except ServiceUnavailableError as e:
             info["degraded"] = True
             info["error"] = str(e)
             logger.warning("text_channel_unavailable", error=str(e))
+            elapsed_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "text_search", 0, elapsed_ms,
+                {"channel": "text", "degraded": True},
+            )
             return None, info
         except Exception as e:
             info["error"] = str(e)
             logger.warning("text_channel_error", error=str(e))
+            elapsed_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "text_search", 0, elapsed_ms,
+                {"channel": "text", "error": str(e)},
+            )
             return None, info
 
     async def run_sparse() -> tuple[RetrievalResult | None, dict[str, Any]]:
         info: dict[str, Any] = {"timed_out": False, "error": None, "degraded": False}
+        chan_start = time.perf_counter()
         try:
             result = await asyncio.wait_for(
                 asyncio.to_thread(sparse.retrieve_sparse, primary_query, top_k, filters=filters),
                 timeout=channel_timeout,
+            )
+            latency_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "sparse_search",
+                candidates_count=len(result.candidates) if result else 0,
+                latency_ms=latency_ms,
+                extra_attrs={"channel": "sparse"},
             )
             return result, info
         except TimeoutError:
             info["timed_out"] = True
             info["error"] = "Sparse channel timed out"
             logger.warning("sparse_channel_timeout", query=query[:50])
+            elapsed_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "sparse_search", 0, elapsed_ms,
+                {"channel": "sparse", "timed_out": True},
+            )
             return None, info
         except ServiceUnavailableError as e:
             info["degraded"] = True
             info["error"] = str(e)
             logger.warning("sparse_channel_unavailable", error=str(e))
+            elapsed_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "sparse_search", 0, elapsed_ms,
+                {"channel": "sparse", "degraded": True},
+            )
             return None, info
         except Exception as e:
             info["error"] = str(e)
             logger.warning("sparse_channel_error", error=str(e))
+            elapsed_ms = int((time.perf_counter() - chan_start) * 1000)
+            trace_retrieval_span(
+                "sparse_search", 0, elapsed_ms,
+                {"channel": "sparse", "error": str(e)},
+            )
             return None, info
 
     # Run all three channels concurrently
@@ -618,6 +700,21 @@ async def retrieve_async(
 
     fusion_ms = int((time.perf_counter() - fusion_start) * 1000)
 
+    # Trace fusion span
+    tracer = get_tracer()
+    with tracer.start_as_current_span(
+        "fusion",
+        attributes={
+            "fusion_ms": fusion_ms,
+            "fused_candidates": len(fused_result.candidates),
+            "visual_input": len(visual_result.candidates) if visual_result else 0,
+            "text_input": len(text_result.candidates) if text_result else 0,
+            "sparse_input": len(sparse_result.candidates) if sparse_result else 0,
+            "top_n": top_k,
+        },
+    ):
+        pass
+
     logger.info(
         "fusion_complete",
         fused_candidates=len(fused_result.candidates),
@@ -651,11 +748,33 @@ async def retrieve_async(
         except TimeoutError:
             logger.warning("rerank_timeout_using_fusion_order")
             vlm_rerank_skipped = True
+            elapsed_ms = int((time.perf_counter() - rerank_start) * 1000)
+            trace_retrieval_span(
+                "vlm_rerank",
+                len(fused_result.candidates),
+                elapsed_ms,
+                {"vlm_rerank_skipped": True, "timeout": True, "model": "gemini-2.5-flash"},
+            )
         except Exception as e:
             logger.warning("rerank_error_using_fusion_order", error=str(e))
             vlm_rerank_skipped = True
+            elapsed_ms = int((time.perf_counter() - rerank_start) * 1000)
+            trace_retrieval_span(
+                "vlm_rerank",
+                len(fused_result.candidates),
+                elapsed_ms,
+                {"vlm_rerank_skipped": True, "error": str(e), "model": "gemini-2.5-flash"},
+            )
 
         rerank_ms = int((time.perf_counter() - rerank_start) * 1000)
+
+        if not vlm_rerank_skipped:
+            trace_retrieval_span(
+                "vlm_rerank",
+                candidates_count=len(fused_result.candidates),
+                latency_ms=rerank_ms,
+                extra_attrs={"model": "gemini-2.5-flash"},
+            )
 
         logger.info(  # type: ignore
             "rerank_complete",

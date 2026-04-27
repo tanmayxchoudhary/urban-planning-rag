@@ -44,6 +44,7 @@ from urban_rag.generate.prompts import (
     extract_citations_from_answer,
     validate_citations,
 )
+from urban_rag.telemetry.tracing import get_tracer, trace_generation_span
 
 logger = structlog.get_logger(__name__, service="generate-orchestrator")
 
@@ -228,6 +229,7 @@ async def answer(
 
     # ── Build answer prompts ───────────────────────────────────────────────
     answer_mode = AnswerMode.DEEP if mode == "deep" else AnswerMode.FAST
+    prompt_build_start = time.perf_counter()
 
     try:
         system_prompt, user_prompt, _template_version = build_answer_prompt(
@@ -235,6 +237,21 @@ async def answer(
             candidates=retrieval_result.candidates,
             mode=answer_mode,
         )
+        prompt_build_ms = int((time.perf_counter() - prompt_build_start) * 1000)
+
+        # Trace prompt_build span
+        tracer = get_tracer()
+        with tracer.start_as_current_span(
+            "prompt_build",
+            attributes={
+                "template_id": "answer.default",
+                "template_version": _template_version,
+                "prompt_tokens": len(system_prompt) // 4,  # rough token estimate
+                "prompt_build_ms": prompt_build_ms,
+            },
+        ):
+            pass
+
     except ValueError as e:
         logger.error("prompt_build_failed", query_id=query_id, error=str(e))
         yield ErrorEvent(
@@ -262,24 +279,44 @@ async def answer(
     error_occurred = False
     error_message = ""
 
-    async for event in generate_stream(
-        system_prompt=system_prompt,
-        user_prompt=user_prompt,
-        image_uris=image_uris if image_uris else None,
-        max_output_tokens=max_output_tokens,
-        temperature=temperature,
-    ):
-        if event.is_error:
-            error_occurred = True
-            error_message = event.error or "Unknown generation error"
-            break
+    # Wrap generate_stream with vlm_generate span
+    tracer = get_tracer()
+    vlm_ctx = tracer.start_as_current_span(
+        "vlm_generate",
+        attributes={
+            "model": "gemini-2.5-flash",
+            "image_count": len(image_uris) if image_uris else 0,
+        },
+    )
+    vlm_ctx.__enter__()
+    try:
+        async for event in generate_stream(
+            system_prompt=system_prompt,
+            user_prompt=user_prompt,
+            image_uris=image_uris if image_uris else None,
+            max_output_tokens=max_output_tokens,
+            temperature=temperature,
+        ):
+            if event.is_error:
+                error_occurred = True
+                error_message = event.error or "Unknown generation error"
+                break
 
-        if event.chunk:
-            token_count += 1
-            yield TokenEvent(query_id=query_id, chunk=event.chunk)
-            full_text += event.chunk
-
-    generation_latency_ms = int((time.perf_counter() - generation_start) * 1000)
+            if event.chunk:
+                token_count += 1
+                yield TokenEvent(query_id=query_id, chunk=event.chunk)
+                full_text += event.chunk
+    finally:
+        generation_latency_ms = int((time.perf_counter() - generation_start) * 1000)
+        # Record prompt/output tokens if available from the last event
+        # For now we record rough estimates
+        trace_generation_span(
+            "vlm_generate",
+            model="gemini-2.5-flash",
+            output_tokens=token_count,
+            latency_ms=generation_latency_ms,
+        )
+        vlm_ctx.__exit__(None, None, None)
 
     if error_occurred:
         logger.error(
@@ -297,6 +334,8 @@ async def answer(
         return
 
     # ── Validate and fix citations ────────────────────────────────────────
+    post_process_start = time.perf_counter()
+
     corrected_text, invalid_indices = validate_citations(
         full_text, retrieval_result.candidates
     )
@@ -340,6 +379,22 @@ async def answer(
         total_candidates=len(retrieval_result.candidates),
         has_invalid_citations=len(invalid_indices) > 0,
     )
+
+    post_process_ms = int((time.perf_counter() - post_process_start) * 1000)
+
+    # Trace post_process span
+    tracer = get_tracer()
+    with tracer.start_as_current_span(
+        "post_process",
+        attributes={
+            "citations_validated": len(citations),
+            "citations_invalid": len(invalid_indices),
+            "cited_indices": cited_indices,
+            "confidence": confidence,
+            "post_process_ms": post_process_ms,
+        },
+    ):
+        pass
 
     # ── Build diagnostics ──────────────────────────────────────────────────
     total_latency_ms = int((time.perf_counter() - start_time) * 1000)

@@ -46,6 +46,7 @@ from urban_rag.common.types import (
 )
 from urban_rag.generate.orchestrator import answer
 from urban_rag.retrieve.orchestrator import retrieve_async
+from urban_rag.telemetry.tracing import get_current_trace_url, get_tracer
 
 if TYPE_CHECKING:
     pass
@@ -504,6 +505,144 @@ async def ask_stream(query_id: str) -> StreamingResponse:
         question = entry.get("question", "")
         mode = entry.get("mode", "fast")
 
+        # Start root query span with required attributes per PLAN.md §13.1
+        tracer = get_tracer()
+        # Hash the client IP for privacy (we don't log raw IPs)
+        import hashlib
+        user_hash = hashlib.sha256(query_id.encode()).hexdigest()[:16]
+        corpus_version = "v0.1.0"  # TODO: wire to actual corpus version
+
+        root_ctx = tracer.start_as_current_span(
+            "query",
+            attributes={
+                "query_id": query_id,
+                "mode": mode,
+                "user_hash": user_hash,
+                "corpus_version": corpus_version,
+            },
+        )
+        root_ctx.__enter__()
+        try:
+            # Emit retrieval_started
+            yield _format_sse("retrieval_started", {
+                "query_id": query_id,
+                "ts": datetime.now(UTC).isoformat(),
+            })
+
+            # Run retrieval with a timeout to prevent SSE from hanging
+            try:
+                retrieval_result = await asyncio.wait_for(
+                    retrieve_async(
+                        query=question,
+                        top_k=5,
+                        rerank_top_n=5,
+                        channel_timeout=15.0,
+                        rerank_timeout=30.0,
+                        filters={},
+                        use_rerank=True,
+                    ),
+                    timeout=20.0,  # SSE stream timeout - must emit events before this
+                )
+            except TimeoutError:
+                # Retrieval timed out - emit error and done immediately
+                _query_store[query_id]["status"] = "error"
+                _query_store[query_id]["error_code"] = RETRIEVAL_TIMEOUT_CODE
+                _query_store[query_id]["error_message"] = (
+                    "Retrieval timed out. The corpus may be empty or the service is slow."
+                )
+                _query_store[query_id]["http_status"] = 504
+                yield _format_sse("error", {
+                    "code": RETRIEVAL_TIMEOUT_CODE,
+                    "message": (
+                        "Retrieval timed out. "
+                        "The corpus may be empty or the service is slow."
+                    ),
+                    "stage": "retrieval",
+                })
+                yield _format_sse("done", {"query_id": query_id})
+                return
+
+            # Emit retrieval_completed
+            candidates_data = [
+                {
+                    "page_id": c.page_id,
+                    "score": c.score,
+                    "channel_scores": c.channel_scores,
+                    "page_image_uri": c.page_image_uri,
+                    "extracted_text_excerpt": c.extracted_text_excerpt,
+                    "section_title": c.section_title,
+                }
+                for c in retrieval_result.candidates
+            ]
+            yield _format_sse("retrieval_completed", {
+                "query_id": query_id,
+                "candidates": candidates_data,
+                "latency_ms": retrieval_result.latency_ms,
+            })
+
+            # Emit generation_started
+            yield _format_sse("generation_started", {
+                "query_id": query_id,
+                "model": "gemini-2.5-flash",
+                "ts": datetime.now(UTC).isoformat(),
+            })
+
+            # Run generation and stream tokens
+            async for event in answer(
+                query=question,
+                retrieval_result=retrieval_result,
+                mode=mode,
+            ):
+                event_name = event.__class__.__name__
+                if event_name == "TokenEvent":
+                    yield _format_sse("token", {"text": getattr(event, "chunk", "")})
+                elif event_name == "GenerationCompletedEvent":
+                    # Store the completed answer and update status
+                    _query_store[query_id]["status"] = "completed"
+                    _query_store[query_id]["answer"] = {
+                        "answer_markdown": getattr(event, "answer_markdown", ""),
+                        "citations": [c.model_dump() for c in getattr(event, "citations", [])],
+                        "confidence": getattr(event, "confidence", "medium"),
+                        "diagnostics": _safe_model_dump(getattr(event, "diagnostics", None)),
+                        "query_id": getattr(event, "query_id", query_id),
+                    }
+                    # Also emit generation_completed to SSE stream per VAL-API-007
+                    yield _format_sse("generation_completed", {
+                        "answer_markdown": getattr(event, "answer_markdown", ""),
+                        "citations": [c.model_dump() for c in getattr(event, "citations", [])],
+                        "confidence": getattr(event, "confidence", "medium"),
+                        "diagnostics": _safe_model_dump(getattr(event, "diagnostics", None)),
+                        "query_id": getattr(event, "query_id", query_id),
+                    })
+                elif event_name == "RefusedEvent":
+                    _query_store[query_id]["status"] = "refused"
+                    _query_store[query_id]["refused_reason"] = getattr(event, "reason", "unknown")
+                    _query_store[query_id]["refused_message"] = getattr(event, "message", "")
+                    yield _format_sse("refused", {
+                        "reason": getattr(event, "reason", "unknown"),
+                        "message": getattr(event, "message", ""),
+                    })
+                elif event_name == "ErrorEvent":
+                    _query_store[query_id]["status"] = "error"
+                    _query_store[query_id]["error_code"] = getattr(event, "code", INTERNAL_CODE)
+                    _query_store[query_id]["error_message"] = getattr(event, "message", "")
+                    _query_store[query_id]["error_stage"] = getattr(event, "stage", "generation")
+                    yield _format_sse("error", {
+                        "code": getattr(event, "code", "internal"),
+                        "message": getattr(event, "message", ""),
+                        "stage": getattr(event, "stage", "generation"),
+                    })
+
+            # Emit done
+            yield _format_sse("done", {"query_id": query_id})
+
+        finally:
+            # End the root span and record trace URL
+            root_ctx.__exit__(None, None, None)
+            trace_url = get_current_trace_url()
+            if trace_url:
+                _query_store[query_id]["trace_url"] = trace_url
+
         # Emit retrieval_started
         yield _format_sse("retrieval_started", {
             "query_id": query_id,
@@ -720,7 +859,7 @@ async def get_answer(query_id: str) -> CompletedAnswerResponse:
         question=entry["question"],
         answer=AnswerResponse(**entry["answer"]),
         retrieval=RetrievalResult(**entry.get("retrieval_result", {})),
-        trace_url=None,  # Langfuse integration deferred
+        trace_url=entry.get("trace_url"),
     )
 
 

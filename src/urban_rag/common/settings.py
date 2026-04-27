@@ -53,6 +53,12 @@ class Settings(BaseSettings):
     # Telemetry
     otel_endpoint: str | None = None
 
+    # Langfuse tracing (optional)
+    langfuse_public_key: str | None = Field(default=None)
+    langfuse_secret_key: str | None = Field(default=None)
+    langfuse_host: str = Field(default="https://cloud.langfuse.com")
+    langfuse_enabled: bool = Field(default=False)
+
     @field_validator("gemini_api_key")
     @classmethod
     def validate_gemini_api_key(cls, v: str) -> str:
