@@ -38,6 +38,7 @@ import structlog
 from urban_rag.common.errors import ServiceUnavailableError
 from urban_rag.common.types import RetrievalResult
 from urban_rag.retrieve import fusion, rerank, sparse, text, visual
+from urban_rag.telemetry.metrics import record_qdrant_latency, record_retrieval_candidates
 from urban_rag.telemetry.tracing import get_tracer, make_span, trace_retrieval_span
 
 logger = structlog.get_logger(__name__, service="retrieve-orchestrator")
@@ -543,6 +544,7 @@ async def retrieve_async(
                     latency_ms=latency_ms,
                     extra_attrs={"channel": "visual"},
                 )
+                record_qdrant_latency(channel="visual", latency_seconds=latency_ms / 1000)
                 return result, info
             except TimeoutError:
                 info["timed_out"] = True
@@ -553,6 +555,7 @@ async def retrieve_async(
                     "visual_search", 0, elapsed_ms,
                     {"channel": "visual", "timed_out": True},
                 )
+                record_qdrant_latency(channel="visual", latency_seconds=elapsed_ms / 1000)
                 return None, info
             except ServiceUnavailableError as e:
                 info["degraded"] = True
@@ -563,6 +566,7 @@ async def retrieve_async(
                     "visual_search", 0, elapsed_ms,
                     {"channel": "visual", "degraded": True},
                 )
+                record_qdrant_latency(channel="visual", latency_seconds=elapsed_ms / 1000)
                 return None, info
             except Exception as e:
                 info["error"] = str(e)
@@ -572,6 +576,7 @@ async def retrieve_async(
                     "visual_search", 0, elapsed_ms,
                     {"channel": "visual", "error": str(e)},
                 )
+                record_qdrant_latency(channel="visual", latency_seconds=elapsed_ms / 1000)
                 return None, info
 
         async def run_text() -> tuple[RetrievalResult | None, dict[str, Any]]:
@@ -589,6 +594,7 @@ async def retrieve_async(
                     latency_ms=latency_ms,
                     extra_attrs={"channel": "text"},
                 )
+                record_qdrant_latency(channel="text", latency_seconds=latency_ms / 1000)
                 return result, info
             except TimeoutError:
                 info["timed_out"] = True
@@ -599,6 +605,7 @@ async def retrieve_async(
                     "text_search", 0, elapsed_ms,
                     {"channel": "text", "timed_out": True},
                 )
+                record_qdrant_latency(channel="text", latency_seconds=elapsed_ms / 1000)
                 return None, info
             except ServiceUnavailableError as e:
                 info["degraded"] = True
@@ -609,6 +616,7 @@ async def retrieve_async(
                     "text_search", 0, elapsed_ms,
                     {"channel": "text", "degraded": True},
                 )
+                record_qdrant_latency(channel="text", latency_seconds=elapsed_ms / 1000)
                 return None, info
             except Exception as e:
                 info["error"] = str(e)
@@ -618,6 +626,7 @@ async def retrieve_async(
                     "text_search", 0, elapsed_ms,
                     {"channel": "text", "error": str(e)},
                 )
+                record_qdrant_latency(channel="text", latency_seconds=elapsed_ms / 1000)
                 return None, info
 
         async def run_sparse() -> tuple[RetrievalResult | None, dict[str, Any]]:
@@ -640,6 +649,7 @@ async def retrieve_async(
                     latency_ms=latency_ms,
                     extra_attrs={"channel": "sparse"},
                 )
+                record_qdrant_latency(channel="sparse", latency_seconds=latency_ms / 1000)
                 return result, info
             except TimeoutError:
                 info["timed_out"] = True
@@ -650,6 +660,7 @@ async def retrieve_async(
                     "sparse_search", 0, elapsed_ms,
                     {"channel": "sparse", "timed_out": True},
                 )
+                record_qdrant_latency(channel="sparse", latency_seconds=elapsed_ms / 1000)
                 return None, info
             except ServiceUnavailableError as e:
                 info["degraded"] = True
@@ -660,6 +671,7 @@ async def retrieve_async(
                     "sparse_search", 0, elapsed_ms,
                     {"channel": "sparse", "degraded": True},
                 )
+                record_qdrant_latency(channel="sparse", latency_seconds=elapsed_ms / 1000)
                 return None, info
             except Exception as e:
                 info["error"] = str(e)
@@ -669,6 +681,7 @@ async def retrieve_async(
                     "sparse_search", 0, elapsed_ms,
                     {"channel": "sparse", "error": str(e)},
                 )
+                record_qdrant_latency(channel="sparse", latency_seconds=elapsed_ms / 1000)
                 return None, info
 
         # Run all three channels concurrently
@@ -734,6 +747,9 @@ async def retrieve_async(
             fused_candidates=len(fused_result.candidates),
             fusion_ms=fusion_ms,
         )
+
+        # Record fused candidate count metric
+        record_retrieval_candidates(channel="fused", count=len(fused_result.candidates))
 
         # ── Step 4: VLM rerank (in thread pool to avoid blocking) ──────────────
         rerank_ms = 0

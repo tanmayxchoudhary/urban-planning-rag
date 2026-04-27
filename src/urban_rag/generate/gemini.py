@@ -33,6 +33,7 @@ from urban_rag.common.types import (
     Citation,
     RetrievalCandidate,
 )
+from urban_rag.telemetry.metrics import record_tokens
 
 logger = structlog.get_logger(__name__, service="generate-gemini")
 
@@ -393,7 +394,7 @@ async def generate(
     candidates: list[RetrievalCandidate],
     system_prompt: str,
     user_prompt: str,
-    mode: str = "fast",
+    mode: Literal["fast", "deep"] = "fast",
     max_output_tokens: int = 8192,
     temperature: float = 0.3,
 ) -> tuple[AnswerResponse, float, int, int]:
@@ -451,6 +452,10 @@ async def generate(
             prompt_tokens = event.prompt_tokens
             completion_tokens = event.completion_tokens
             cost_usd = event.cost_usd
+
+    # Record token metrics after stream is consumed
+    record_tokens(mode=mode, token_type="prompt", count=prompt_tokens)  # noqa: S106
+    record_tokens(mode=mode, token_type="output", count=completion_tokens)  # noqa: S106
 
     if error_occurred:
         logger.error("gemini_generation_failed", error=error_message)
