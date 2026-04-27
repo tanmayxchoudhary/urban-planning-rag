@@ -515,6 +515,7 @@ async def ask_stream(query_id: str) -> StreamingResponse:
         mode = entry.get("mode", "fast")
         query_start_time = time.time()
         terminal_status = "error"  # default to error; updated on success/refusal
+        http_status = 500  # default HTTP status; updated on success (200) or specific error codes
 
         # Start root query span with required attributes per PLAN.md §13.1
         tracer = get_tracer()
@@ -610,6 +611,7 @@ async def ask_stream(query_id: str) -> StreamingResponse:
                 elif event_name == "GenerationCompletedEvent":
                     # Store the completed answer and update status
                     _query_store[query_id]["status"] = "completed"
+                    _query_store[query_id]["http_status"] = 200
                     terminal_status = "success"
                     # Record metrics: cost from diagnostics
                     diagnostics = getattr(event, "diagnostics", None)
@@ -635,6 +637,7 @@ async def ask_stream(query_id: str) -> StreamingResponse:
                     })
                 elif event_name == "RefusedEvent":
                     _query_store[query_id]["status"] = "refused"
+                    _query_store[query_id]["http_status"] = 200
                     terminal_status = "refused"
                     _query_store[query_id]["refused_reason"] = getattr(event, "reason", "unknown")
                     _query_store[query_id]["refused_message"] = getattr(event, "message", "")
@@ -661,9 +664,15 @@ async def ask_stream(query_id: str) -> StreamingResponse:
             # Record terminal metrics
             elapsed_seconds = time.time() - query_start_time
             record_latency(mode=mode, status=terminal_status, latency_seconds=elapsed_seconds)
-            # Update query counter: "started" is replaced with terminal status
-            # Note: we increment the terminal status directly; started was counted at ask()
-            QUERY_TOTAL.labels(mode=mode, status=terminal_status).inc()
+            # Update query counter with HTTP status for P0 alerting (5xx rate)
+            # http_status is set when terminal_status is updated
+            # (success=200, refused=200, error=5xx)
+            http_status = entry.get("http_status", 500)
+            QUERY_TOTAL.labels(
+                mode=mode,
+                status=terminal_status,
+                http_status=str(http_status),
+            ).inc()
 
             # End the root span and record trace URL
             root_ctx.__exit__(None, None, None)

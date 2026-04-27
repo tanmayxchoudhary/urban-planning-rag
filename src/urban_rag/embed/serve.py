@@ -21,6 +21,7 @@ from pydantic import BaseModel, Field
 from urban_rag.common.errors import EmbeddingError, ServiceUnavailableError
 from urban_rag.common.logging import configure_logging
 from urban_rag.embed.colqwen import VisualEmbedder, get_embedder, release_embedder
+from urban_rag.telemetry.metrics import record_embed_cold_start
 
 logger = structlog.get_logger(__name__)
 
@@ -117,6 +118,7 @@ class HealthResponse(BaseModel):
 
 # Global embedder instance (lazy-loaded)
 _embedder: VisualEmbedder | None = None
+_model_ever_loaded: bool = False  # Tracks if model has ever been loaded (for cold-start metric)
 
 
 def get_embedder_instance() -> VisualEmbedder:
@@ -128,14 +130,21 @@ def get_embedder_instance() -> VisualEmbedder:
     Raises:
         ServiceUnavailableError: If embedder cannot be created.
     """
-    global _embedder
+    global _embedder, _model_ever_loaded
     if _embedder is None:
+        cold_start_start = time.perf_counter()
         try:
             _embedder = get_embedder(force_cpu=False)
         except EmbeddingError as e:
             raise ServiceUnavailableError(
                 f"Failed to initialize embedder: {e}"
             ) from e
+        # Record cold-start latency on first model load (per VAL-OPS-022 / P3)
+        if not _model_ever_loaded:
+            cold_start_seconds = time.perf_counter() - cold_start_start
+            record_embed_cold_start(seconds=cold_start_seconds)
+            _model_ever_loaded = True
+            logger.info("Embedder cold-start complete", cold_start_seconds=cold_start_seconds)
     return _embedder
 
 

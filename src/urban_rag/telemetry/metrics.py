@@ -2,10 +2,12 @@
 
 Per PLAN.md Part XIII §13.2:
     Core metrics exported to Prometheus for scraping:
-    - query_total        Counter — total queries, labelled by status, mode
-    - query_latency_seconds  Histogram — end-to-end query latency with latency buckets
+    - query_total           Counter — total queries, labelled by mode, status, http_status
+    - query_latency_seconds Histogram — end-to-end query latency with latency buckets
     - qdrant_latency_seconds  Histogram — Qdrant query latency per channel
-    - cost_usd           Counter — Gemini API cost in USD
+    - cost_usd_total        Counter — Gemini API cost in USD
+    - faithfulness_p50      Gauge — p50 faithfulness score from background eval
+    - embed_cold_start_seconds Histogram — embed service cold-start latency
 
 Usage:
     from urban_rag.telemetry.metrics import (
@@ -13,11 +15,13 @@ Usage:
         record_latency,
         record_qdrant_latency,
         record_cost,
+        record_embed_cold_start,
+        set_faithfulness_p50,
         get_metrics,
     )
 
     # At query start:
-    record_query(mode="fast", status="started")
+    record_query(mode="fast", status="started", http_status=200)
 
     # At query end:
     record_latency(mode="fast", status="success", latency_seconds=1.23)
@@ -27,23 +31,30 @@ Usage:
 
     # At generation completion:
     record_cost(cost_usd=0.0021)
+
+    # At embed service cold-start (first model load):
+    record_embed_cold_start(seconds=45.3)
+
+    # From background eval job:
+    set_faithfulness_p50(score=0.87)
 """
 
 from __future__ import annotations
 
 from typing import Literal
 
-from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
+from prometheus_client import CONTENT_TYPE_LATEST, Counter, Gauge, Histogram, generate_latest
 
 # ---------------------------------------------------------------------------
 # Metric definitions
 # ---------------------------------------------------------------------------
 
-#: Total number of queries submitted, labelled by mode and terminal status.
+#: Total number of queries submitted, labelled by mode, terminal status, and HTTP status.
 QUERY_TOTAL = Counter(
     "query_total",
     "Total number of queries submitted to the RAG API",
-    ["mode", "status"],  # mode: fast|deep, status: success|error|refused
+    ["mode", "status", "http_status"],
+    # mode: fast|deep, status: success|error|refused, http_status: 200|400|422|429|500|502|504 etc.
 )
 
 #: End-to-end query latency in seconds, from submission to final answer.
@@ -83,6 +94,19 @@ TOKENS_TOTAL = Counter(
     "tokens_total",
     "Total tokens processed (prompt + output)",
     ["mode", "token_type"],  # token_type: prompt|output
+)
+
+#: Faithfulness p50 score from background RAGAS eval (per PLAN.md §13.2)
+FAITHFULNESS_P50 = Gauge(
+    "faithfulness_p50",
+    "P50 faithfulness score from background RAGAS evaluation",
+)
+
+#: Embed service cold-start latency in seconds (time to load model on first request).
+EMBED_COLD_START_SECONDS = Histogram(
+    "embed_cold_start_seconds",
+    "Embed service cold-start latency in seconds (model load time on first request)",
+    buckets=(5, 10, 15, 20, 30, 45, 60, 90, 120, 180, 240, 300),
 )
 
 # ---------------------------------------------------------------------------
@@ -157,6 +181,29 @@ def record_tokens(mode: Literal["fast", "deep"], token_type: str, count: int) ->
         count: Number of tokens.
     """
     TOKENS_TOTAL.labels(mode=mode, token_type=token_type).inc(count)
+
+
+def record_embed_cold_start(seconds: float) -> None:
+    """Record embed service cold-start latency.
+
+    This measures the time it takes for the embed service to load
+    the model on first request (cold start vs warm request).
+
+    Args:
+        seconds: Cold-start latency in seconds.
+    """
+    EMBED_COLD_START_SECONDS.observe(seconds)
+
+
+def set_faithfulness_p50(score: float) -> None:
+    """Set the faithfulness p50 gauge from background eval.
+
+    This metric is updated by the background RAGAS eval job.
+
+    Args:
+        score: Faithfulness p50 score (0.0 to 1.0).
+    """
+    FAITHFULNESS_P50.set(score)
 
 
 # ---------------------------------------------------------------------------
