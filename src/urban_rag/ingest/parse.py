@@ -229,20 +229,36 @@ def _extract_sections(doc_dict: dict[str, object]) -> list[dict[str, object]]:
         # Section-level headings in Docling
         if elem_type in ("section", "heading", "h1", "h2", "h3", "h4"):
             level = _heading_level(elem_type, el)
+            page_start_raw = el.get("page", 1)
+            page_start: int = int(page_start_raw) if isinstance(page_start_raw, (int, float)) else 1
             section: dict[str, object] = {
                 "title": text,
                 "level": level,
-                "page_start": el.get("page", 1),
-                "page_end": el.get("page", 1),
+                "page_start": page_start,
+                "page_end": page_start,
                 "children": [],
             }
 
             # Pop stack to find correct parent
-            while section_stack and section_stack[-1]["level"] >= level:
-                section_stack.pop()
+            while section_stack:
+                parent_level_raw = section_stack[-1]["level"]
+                parent_level: int = (
+                    int(parent_level_raw)
+                    if isinstance(parent_level_raw, (int, float))
+                    else 1
+                )
+                if parent_level >= level:
+                    section_stack.pop()
+                else:
+                    break
 
             if section_stack:
-                section_stack[-1].setdefault("children", []).append(section)
+                children_list: list[dict[str, object]] = (
+                    section_stack[-1]["children"]
+                    if isinstance(section_stack[-1]["children"], list)
+                    else []
+                )
+                children_list.append(section)
             else:
                 sections.append(section)
 
@@ -258,7 +274,8 @@ def _extract_sections(doc_dict: dict[str, object]) -> list[dict[str, object]]:
                 fallback = current_section.get("page_start", 1)
                 pg = int(fallback) if isinstance(fallback, int) else 1
             end_val = current_section["page_end"]
-            current_section["page_end"] = max(end_val, pg)
+            end_int: int = int(end_val) if isinstance(end_val, (int, float)) else 1
+            current_section["page_end"] = max(end_int, pg)
 
     return sections
 
@@ -334,7 +351,8 @@ def _extract_tables(doc_dict: dict[str, object]) -> list[dict[str, object]]:
     tables: list[dict[str, object]] = []
 
     # Docling stores tables under 'tables' or within elements with type='table'
-    raw_tables = doc_dict.get("tables", [])
+    raw_tables_raw = doc_dict.get("tables", [])
+    raw_tables: list[dict[str, object]] = raw_tables_raw if isinstance(raw_tables_raw, list) else []
     for i, raw_table in enumerate(raw_tables):
         if not isinstance(raw_table, dict):
             continue
@@ -379,7 +397,7 @@ def _parse_with_marker(pdf_path: Path, doc_hash: str) -> tuple[dict[str, object]
     Returns:
         A (parsed_dict, parser_name) tuple where parser_name == "marker".
     """
-    from marker.convert import convert_single_pdf
+    from marker.convert import convert_single_pdf  # type: ignore[import]
 
     # Marker returns an S3GitArtifact or similar object with .images and .markdown
     result = convert_single_pdf(str(pdf_path), use_llm=True)
@@ -461,18 +479,34 @@ def _parse_marker_sections(full_text: str) -> list[dict[str, object]]:
                 "children": [],
             }
 
-            while section_stack and section_stack[-1]["level"] >= level:
-                section_stack.pop()
+            while section_stack:
+                parent_lvl_raw = section_stack[-1]["level"]
+                parent_lvl: int = (
+                    int(parent_lvl_raw)
+                    if isinstance(parent_lvl_raw, (int, float))
+                    else 1
+                )
+                if parent_lvl >= level:
+                    section_stack.pop()
+                else:
+                    break
 
             if section_stack:
-                section_stack[-1].setdefault("children", []).append(section)
+                children_lst: list[dict[str, object]] = (
+                    section_stack[-1]["children"]
+                    if isinstance(section_stack[-1]["children"], list)
+                    else []
+                )
+                children_lst.append(section)
             else:
                 sections.append(section)
 
             section_stack.append(section)
             current_section = section
         elif current_section is not None:
-            current_section["page_end"] = max(current_section["page_end"], 1)
+            end_raw = current_section["page_end"]
+            end_val: int = int(end_raw) if isinstance(end_raw, (int, float)) else 1
+            current_section["page_end"] = max(end_val, 1)
 
     return sections
 
@@ -558,23 +592,26 @@ def _parse_with_pymupdf(pdf_path: Path, doc_hash: str) -> tuple[dict[str, object
     pages: list[dict[str, object]] = []
     all_text_parts: list[str] = []
 
-    for page_num, page in enumerate(doc, start=1):
-        text = page.get_text("text") or ""
+    for page_num in range(1, len(doc) + 1):
+        page = doc[page_num - 1]
+        page_text: str = page.get_text("text") or ""  # type: ignore[assignment]
+        page_width: float = page.rect.width
+        page_height: float = page.rect.height
         page_dict: dict[str, object] = {
             "page_num": page_num,
-            "width": page.rect.width,
-            "height": page.rect.height,
+            "width": page_width,
+            "height": page_height,
             "elements": [
                 {
                     "type": "paragraph",
-                    "text": text,
+                    "text": page_text,
                     "page": page_num,
                 }
             ],
         }
         pages.append(page_dict)
-        if text.strip():
-            all_text_parts.append(f"[Page {page_num}]\n{text}")
+        if page_text.strip():
+            all_text_parts.append(f"[Page {page_num}]\n{page_text}")
 
     doc.close()
 

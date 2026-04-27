@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, FormEvent } from "react";
+import { useState, useEffect, useRef, FormEvent } from "react";
 import { useStreamingQuery } from "@/hooks/useStreamingQuery";
 import CitationChip from "@/components/CitationChip";
 
@@ -12,6 +12,9 @@ const EXAMPLE_QUESTIONS = [
 
 export default function Home() {
   const [question, setQuestion] = useState("");
+  const [corpusStats, setCorpusStats] = useState<{ documents: number; pages: number } | null>(null);
+  const [corpusLoading, setCorpusLoading] = useState(true);
+  const [corpusError, setCorpusError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -22,6 +25,40 @@ export default function Home() {
     refused,
     submitQuery,
   } = useStreamingQuery();
+
+  // Fetch corpus stats on mount
+  useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    async function fetchCorpusStats() {
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      try {
+        const response = await fetch("/v1/corpus", { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          throw new Error(`Failed to fetch corpus: ${response.status}`);
+        }
+        const data = await response.json();
+        setCorpusStats(data.totals);
+      } catch (err) {
+        if ((err as Error).name === "AbortError") {
+          setCorpusError("Request timed out.");
+        } else {
+          setCorpusError((err as Error).message);
+        }
+      } finally {
+        clearTimeout(timeoutId);
+        setCorpusLoading(false);
+      }
+    }
+    fetchCorpusStats();
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, []);
 
   // Handle form submission
   const handleSubmit = async (e: FormEvent, mode: "fast" | "deep" = "fast") => {
@@ -166,7 +203,15 @@ export default function Home() {
         {/* Corpus stats strip */}
         <section aria-label="Corpus statistics" className="mt-12">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <p className="text-sm text-gray-500">Corpus statistics available at /corpus</p>
+            {corpusLoading ? (
+              <p className="text-sm text-gray-500">Loading corpus stats...</p>
+            ) : corpusError ? (
+              <p className="text-sm text-gray-500">Corpus stats unavailable</p>
+            ) : corpusStats ? (
+              <p className="text-sm text-gray-500">
+                {corpusStats.documents} documents, {corpusStats.pages} pages indexed
+              </p>
+            ) : null}
           </div>
         </section>
       </main>
