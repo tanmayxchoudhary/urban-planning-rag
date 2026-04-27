@@ -1,8 +1,8 @@
-"""CI smoke gates using DeepEval.
+"""CI smoke gates using RAGAS.
 
 Implements VAL-OPS-002 and VAL-OPS-023:
 - PR quality gate enforces smoke thresholds (recall@10 ≥ 0.85, faithfulness ≥ 0.85)
-- DeepEval tests wired into CI and enforce thresholds from PLAN §10.6
+- RAGAS tests wired into CI and enforce thresholds from PLAN §10.6
 
 Run:
     pytest tests/eval/test_smoke_gates.py -v
@@ -10,7 +10,7 @@ Run:
 CI integration (GitHub Actions):
     - runs on every PR
     - fails build when any gate metric drops below threshold
-    - requires GEMINI_API_KEY or OPENAI_API_KEY environment variable
+    - requires GEMINI_API_KEY environment variable
 """
 
 from __future__ import annotations
@@ -260,78 +260,77 @@ class TestSmokeGatesRecallAt10:
 
 
 class TestSmokeGatesFaithfulness:
-    """VAL-OPS-023: faithfulness threshold gate using DeepEval.
+    """VAL-OPS-023: faithfulness threshold gate using RAGAS.
 
-    NOTE: These tests require an LLM API key (OPENAI_API_KEY or GEMINI_API_KEY).
-    If no key is available, the DeepEval-dependent tests are skipped with a
+    NOTE: These tests require an LLM API key (GEMINI_API_KEY).
+    If no key is available, the RAGAS-dependent tests are skipped with a
     clear message indicating why.
     """
 
-    def test_faithfulness_gate_uses_deepeval_assert_test(self):
-        """Verify DeepEval assert_test is the primary API for CI gate assertions."""
+    def test_faithfulness_gate_uses_ragas_evaluate(self):
+        """Verify RAGAS evaluate function exists and is callable."""
+        from ragas import evaluate
+        assert callable(evaluate), "ragas.evaluate must be available for CI gate"
+
+    def test_faithfulness_wrapper_accepts_faithful_input(self):
+        """Verify ragas_wrapper can process a faithful answer through the evaluation pipeline."""
         if not _api_key_available():
             pytest.skip(
-                "No LLM API key available (set OPENAI_API_KEY or GEMINI_API_KEY). "
-                "DeepEval faithfulness tests require a live LLM API call and "
-                "cannot run in a purely offline environment."
+                "No LLM API key available (set GEMINI_API_KEY). "
+                "RAGAS faithfulness tests require a live LLM API call."
             )
 
-        pytest.importorskip("deepeval")
-        from deepeval import assert_test
-        from deepeval.metrics import FaithfulnessMetric
-        from deepeval.test_case import LLMTestCase
+        from urban_rag.eval.metrics import RagasEvaluationInput, evaluate_single
 
-        # Create a clearly faithful test case
-        case = LLMTestCase(
-            input="What is the FSI for residential in Mumbai?",
-            actual_output="The FSI for residential zones in Mumbai is 2.5 per DP 2034.",
-            retrieval_context=[
+        # Create a faithful test case
+        eval_input = RagasEvaluationInput(
+            question="What is the FSI for residential in Mumbai?",
+            answer="The FSI for residential zones in Mumbai is 2.5 per DP 2034.",
+            ground_truth="The FSI for residential zones in Mumbai DP 2034 is 2.5",
+            contexts=[
                 "Page 1: FSI table shows residential FSI = 2.5 in Mumbai DP 2034",
                 "Page 2: Zone classification confirms residential zone FSI of 2.5",
             ],
-            expected_output="The FSI for residential zones in Mumbai DP 2034 is 2.5",
         )
 
-        metric = FaithfulnessMetric(
-            threshold=FAITHFULNESS_THRESHOLD,
-            model="gemini/gemini-2.5-flash",
+        # This should not raise - evaluate_single handles API calls internally
+        result = evaluate_single(eval_input)
+
+        # The faithfulness score should be available and above threshold
+        assert result.faithfulness is not None, "Faithfulness score should be computed"
+        assert result.faithfulness >= FAITHFULNESS_THRESHOLD, (
+            f"Faithfulness score {result.faithfulness:.4f} < "
+            f"threshold {FAITHFULNESS_THRESHOLD}"
         )
 
-        # This should NOT raise — score should be >= 0.85 for a faithful answer
-        result = assert_test(case, metrics=[metric], run_async=False)
-        assert result is not False, "DeepEval assert_test returned False — gate failed"
-
-    def test_faithfulness_gate_fails_on_low_score(self):
-        """An unfaithful answer (hallucinated facts) fails the faithfulness gate."""
+    def test_faithfulness_wrapper_detects_hallucination(self):
+        """Verify ragas_wrapper correctly identifies an unfaithful/hallucinated answer."""
         if not _api_key_available():
             pytest.skip(
-                "No LLM API key available (set OPENAI_API_KEY or GEMINI_API_KEY). "
-                "DeepEval faithfulness tests require a live LLM API call."
+                "No LLM API key available (set GEMINI_API_KEY). "
+                "RAGAS faithfulness tests require a live LLM API call."
             )
 
-        pytest.importorskip("deepeval")
-        from deepeval import assert_test
-        from deepeval.metrics import FaithfulnessMetric
-        from deepeval.test_case import LLMTestCase
+        from urban_rag.eval.metrics import RagasEvaluationInput, evaluate_single
 
         # Hallucinated answer: claims FSI=4.0 but context says 2.5
-        case = LLMTestCase(
-            input="What is the FSI for residential in Mumbai?",
-            actual_output="The FSI for residential zones in Mumbai is 4.0 (hallucinated value).",
-            retrieval_context=[
+        eval_input = RagasEvaluationInput(
+            question="What is the FSI for residential in Mumbai?",
+            answer="The FSI for residential zones in Mumbai is 4.0 (hallucinated value).",
+            ground_truth="The FSI for residential zones is 2.5",
+            contexts=[
                 "Page 1: FSI table shows residential FSI = 2.5 in Mumbai DP 2034",
             ],
-            expected_output="The FSI for residential zones is 2.5",
         )
 
-        metric = FaithfulnessMetric(
-            threshold=FAITHFULNESS_THRESHOLD,
-            model="gemini/gemini-2.5-flash",
-        )
+        result = evaluate_single(eval_input)
 
-        # This SHOULD raise AssertionError — faithfulness will be low (< 0.85)
-        with pytest.raises(AssertionError, match=r"Faithfulness.*failed CI gate"):
-            assert_test(case, metrics=[metric], run_async=False)
+        # The faithfulness score should be below threshold for hallucinated answer
+        assert result.faithfulness is not None, "Faithfulness score should be computed"
+        assert result.faithfulness < FAITHFULNESS_THRESHOLD, (
+            f"Faithfulness score {result.faithfulness:.4f} should be < "
+            f"threshold {FAITHFULNESS_THRESHOLD} for hallucinated answer"
+        )
 
     def test_faithfulness_threshold_defined_in_code(self):
         """Verify threshold constant matches PLAN §10.6 requirement (0.85)."""
@@ -340,51 +339,38 @@ class TestSmokeGatesFaithfulness:
         )
 
 
-class TestSmokeGatesDeepEvalWiring:
-    """VAL-OPS-023: Verify DeepEval is correctly wired for CI integration."""
+class TestSmokeGatesRagasWiring:
+    """VAL-OPS-023: Verify RAGAS is correctly wired for CI integration."""
 
-    def test_deepeval_importable(self):
-        """DeepEval package is installed and importable."""
-        import deepeval
-        assert hasattr(deepeval, "assert_test"), (
-            "deepeval.assert_test must be available for CI gate"
+    def test_ragas_importable(self):
+        """RAGAS package is installed and importable."""
+        from ragas import evaluate
+        assert callable(evaluate), "ragas.evaluate must be available for CI gate"
+
+    def test_faithfulness_metric_class_exists(self):
+        """RAGAS Faithfulness metric class is importable."""
+        from ragas.metrics.collections import Faithfulness
+        assert Faithfulness is not None, "Faithfulness metric class must exist"
+
+    def test_answer_relevancy_metric_class_exists(self):
+        """RAGAS AnswerRelevancy metric class is available (PLAN §10.3.2 target ≥ 0.80)."""
+        from ragas.metrics.collections import AnswerRelevancy
+        assert AnswerRelevancy is not None, "AnswerRelevancy metric class must exist"
+
+    def test_ragas_evaluation_input_accepts_required_fields(self):
+        """RagasEvaluationInput has the fields needed for RAG evaluation."""
+        from urban_rag.eval.metrics import RagasEvaluationInput
+
+        eval_input = RagasEvaluationInput(
+            question="test question",
+            answer="test answer",
+            ground_truth="ground truth",
+            contexts=["context 1", "context 2"],
         )
-
-    def test_faithfulness_metric_importable(self):
-        """DeepEval FaithfulnessMetric is the correct metric class."""
-        if not _api_key_available():
-            pytest.skip("No LLM API key available — DeepEval metric init requires API key")
-
-        from deepeval.metrics import FaithfulnessMetric
-
-        # Verify it accepts threshold and model parameters
-        metric = FaithfulnessMetric(threshold=0.85)
-        assert metric.threshold == 0.85
-
-    def test_answer_relevancy_metric_importable(self):
-        """DeepEval AnswerRelevancyMetric is available (PLAN §10.3.2 target ≥ 0.80)."""
-        if not _api_key_available():
-            pytest.skip("No LLM API key available — DeepEval metric init requires API key")
-
-        from deepeval.metrics import AnswerRelevancyMetric
-
-        metric = AnswerRelevancyMetric(threshold=0.80)
-        assert metric.threshold == 0.80
-
-    def test_llmtestcase_accepts_required_fields(self):
-        """LLMTestCase has the fields needed for RAG evaluation."""
-        from deepeval.test_case import LLMTestCase
-
-        case = LLMTestCase(
-            input="test question",
-            actual_output="test answer",
-            retrieval_context=["context 1", "context 2"],
-            expected_output="ground truth",
-        )
-        assert case.input == "test question"
-        assert case.actual_output == "test answer"
-        assert case.retrieval_context == ["context 1", "context 2"]
-        assert case.expected_output == "ground truth"
+        assert eval_input.question == "test question"
+        assert eval_input.answer == "test answer"
+        assert eval_input.ground_truth == "ground truth"
+        assert eval_input.contexts == ["context 1", "context 2"]
 
     def test_smoke_dataset_has_required_fields(self):
         """Smoke dataset entries have all fields needed for evaluation."""
