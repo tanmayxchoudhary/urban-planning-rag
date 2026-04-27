@@ -28,9 +28,15 @@ export default function CorpusPage() {
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    let timeoutId: ReturnType<typeof setTimeout>;
+
     async function fetchCorpus() {
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => controller.abort(), 8000);
+
       try {
-        const response = await fetch("/v1/corpus");
+        const response = await fetch("/v1/corpus", { signal: controller.signal });
+        clearTimeout(timeoutId);
         if (!response.ok) {
           throw new Error(`Failed to fetch corpus: ${response.status}`);
         }
@@ -44,12 +50,21 @@ export default function CorpusPage() {
         });
         setExpandedGroups(groups);
       } catch (err) {
-        setError((err as Error).message);
+        if ((err as Error).name === "AbortError") {
+          setError("Request timed out. Please try again.");
+        } else {
+          setError((err as Error).message);
+        }
       } finally {
+        clearTimeout(timeoutId);
         setLoading(false);
       }
     }
     fetchCorpus();
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
   }, []);
 
   const toggleGroup = (groupKey: string) => {

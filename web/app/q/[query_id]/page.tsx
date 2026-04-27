@@ -1,16 +1,12 @@
 "use client";
 
-import { useState, useEffect, use, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useStreamingQuery } from "@/hooks/useStreamingQuery";
 import CitationChip from "@/components/CitationChip";
 import CitationLightbox from "@/components/CitationLightbox";
 import FeedbackWidget from "@/components/FeedbackWidget";
 import { Citation, CitationCandidate } from "@/lib/sse-types";
-
-interface QueryPageProps {
-  params: Promise<{ query_id: string }>;
-}
 
 interface CachedResult {
   question: string;
@@ -20,8 +16,8 @@ interface CachedResult {
   mode: "fast" | "deep";
 }
 
-export default function QueryPage({ params }: QueryPageProps) {
-  const { query_id } = use(params);
+export default function QueryPage({ params }: { params: { query_id: string } }) {
+  const { query_id } = params;
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(true);
   const [cachedResult, setCachedResult] = useState<CachedResult | null>(null);

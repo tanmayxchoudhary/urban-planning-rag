@@ -80,8 +80,8 @@ export function useStreamingQuery(options: UseStreamingQueryOptions = {}) {
 
         setState((prev) => ({ ...prev, queryId: query_id }));
 
-        // Navigate to query page
-        router.push(`/q/${query_id}`);
+        // Navigate to query page (defer to after render to avoid React setState-during-render error)
+        queueMicrotask(() => router.push(`/q/${query_id}`));
 
         // Connect to SSE stream
         const streamResponse = await fetch(stream_url, {
