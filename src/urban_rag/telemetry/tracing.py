@@ -208,17 +208,11 @@ def get_current_trace_url() -> str | None:
     if client is None:
         return None
 
-    # Get the current trace from Langfuse's context
     try:
-        from langfuse.decorators import langfuse_context
-
-        trace = langfuse_context.get_current_trace()
-        if trace:
-            return trace.get_trace_url()
+        return client.get_trace_url()
     except Exception as e:
         logger.debug("get_current_trace_url_failed", error=str(e))
-
-    return None
+        return None
 
 
 def get_current_trace_id() -> str | None:
@@ -232,15 +226,10 @@ def get_current_trace_id() -> str | None:
         return None
 
     try:
-        from langfuse.decorators import langfuse_context
-
-        trace = langfuse_context.get_current_trace()
-        if trace:
-            return trace.id
+        return client.get_current_trace_id()
     except Exception as e:
         logger.debug("get_current_trace_id_failed", error=str(e))
-
-    return None
+        return None
 
 
 # ---------------------------------------------------------------------------
