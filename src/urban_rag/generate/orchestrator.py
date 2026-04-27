@@ -231,92 +231,106 @@ async def answer(
     answer_mode = AnswerMode.DEEP if mode == "deep" else AnswerMode.FAST
     prompt_build_start = time.perf_counter()
 
-    try:
-        system_prompt, user_prompt, _template_version = build_answer_prompt(
-            question=query,
-            candidates=retrieval_result.candidates,
-            mode=answer_mode,
-        )
-        prompt_build_ms = int((time.perf_counter() - prompt_build_start) * 1000)
-
-        # Trace prompt_build span
-        tracer = get_tracer()
-        with tracer.start_as_current_span(
-            "prompt_build",
-            attributes={
-                "template_id": "answer.default",
-                "template_version": _template_version,
-                "prompt_tokens": len(system_prompt) // 4,  # rough token estimate
-                "prompt_build_ms": prompt_build_ms,
-            },
-        ):
-            pass
-
-    except ValueError as e:
-        logger.error("prompt_build_failed", query_id=query_id, error=str(e))
-        yield ErrorEvent(
-            query_id=query_id,
-            code="generation_error",
-            message=f"Failed to build answer prompt: {e}",
-            stage="generation",
-        )
-        yield DoneEvent(query_id=query_id)
-        return
-
-    # ── Emit: generation_started ──────────────────────────────────────────
-    yield GenerationStartedEvent(query_id=query_id, mode=mode)
-
-    # ── Stream tokens from Gemini ──────────────────────────────────────────
-    generation_start = time.perf_counter()
-    full_text = ""
-
-    # Collect image URIs from candidates for visual grounding
-    image_uris = [
-        c.page_image_uri for c in retrieval_result.candidates if c.page_image_uri
-    ]
-
-    token_count = 0
-    error_occurred = False
-    error_message = ""
-
-    # Wrap generate_stream with vlm_generate span
+    # Wrap all generation sub-spans under a parent 'generation' span
+    # per PLAN.md §13.1: generation > prompt_build, vlm_generate
     tracer = get_tracer()
-    vlm_ctx = tracer.start_as_current_span(
-        "vlm_generate",
+    gen_ctx = tracer.start_as_current_span(
+        "generation",
         attributes={
-            "model": "gemini-2.5-flash",
-            "image_count": len(image_uris) if image_uris else 0,
+            "query_id": query_id,
+            "mode": mode,
         },
     )
-    vlm_ctx.__enter__()
-    try:
-        async for event in generate_stream(
-            system_prompt=system_prompt,
-            user_prompt=user_prompt,
-            image_uris=image_uris if image_uris else None,
-            max_output_tokens=max_output_tokens,
-            temperature=temperature,
-        ):
-            if event.is_error:
-                error_occurred = True
-                error_message = event.error or "Unknown generation error"
-                break
+    gen_ctx.__enter__()
 
-            if event.chunk:
-                token_count += 1
-                yield TokenEvent(query_id=query_id, chunk=event.chunk)
-                full_text += event.chunk
-    finally:
-        generation_latency_ms = int((time.perf_counter() - generation_start) * 1000)
-        # Record prompt/output tokens if available from the last event
-        # For now we record rough estimates
-        trace_generation_span(
+    try:
+        try:
+            system_prompt, user_prompt, _template_version = build_answer_prompt(
+                question=query,
+                candidates=retrieval_result.candidates,
+                mode=answer_mode,
+            )
+            prompt_build_ms = int((time.perf_counter() - prompt_build_start) * 1000)
+
+            # Trace prompt_build span as child of 'generation'
+            with tracer.start_as_current_span(
+                "prompt_build",
+                attributes={
+                    "template_id": "answer.default",
+                    "template_version": _template_version,
+                    "prompt_tokens": len(system_prompt) // 4,  # rough token estimate
+                    "prompt_build_ms": prompt_build_ms,
+                },
+            ):
+                pass
+
+        except ValueError as e:
+            logger.error("prompt_build_failed", query_id=query_id, error=str(e))
+            yield ErrorEvent(
+                query_id=query_id,
+                code="generation_error",
+                message=f"Failed to build answer prompt: {e}",
+                stage="generation",
+            )
+            yield DoneEvent(query_id=query_id)
+            return
+
+        # ── Emit: generation_started ──────────────────────────────────────────
+        yield GenerationStartedEvent(query_id=query_id, mode=mode)
+
+        # ── Stream tokens from Gemini ──────────────────────────────────────────
+        generation_start = time.perf_counter()
+        full_text = ""
+
+        # Collect image URIs from candidates for visual grounding
+        image_uris = [
+            c.page_image_uri for c in retrieval_result.candidates if c.page_image_uri
+        ]
+
+        token_count = 0
+        error_occurred = False
+        error_message = ""
+
+        # Wrap generate_stream with vlm_generate span (child of 'generation')
+        vlm_ctx = tracer.start_as_current_span(
             "vlm_generate",
-            model="gemini-2.5-flash",
-            output_tokens=token_count,
-            latency_ms=generation_latency_ms,
+            attributes={
+                "model": "gemini-2.5-flash",
+                "image_count": len(image_uris) if image_uris else 0,
+            },
         )
-        vlm_ctx.__exit__(None, None, None)
+        vlm_ctx.__enter__()
+        try:
+            async for event in generate_stream(
+                system_prompt=system_prompt,
+                user_prompt=user_prompt,
+                image_uris=image_uris if image_uris else None,
+                max_output_tokens=max_output_tokens,
+                temperature=temperature,
+            ):
+                if event.is_error:
+                    error_occurred = True
+                    error_message = event.error or "Unknown generation error"
+                    break
+
+                if event.chunk:
+                    token_count += 1
+                    yield TokenEvent(query_id=query_id, chunk=event.chunk)
+                    full_text += event.chunk
+        finally:
+            generation_latency_ms = int((time.perf_counter() - generation_start) * 1000)
+            # Record prompt/output tokens if available from the last event
+            # For now we record rough estimates
+            trace_generation_span(
+                "vlm_generate",
+                model="gemini-2.5-flash",
+                output_tokens=token_count,
+                latency_ms=generation_latency_ms,
+            )
+            vlm_ctx.__exit__(None, None, None)
+
+    finally:
+        gen_ctx.__exit__(None, None, None)
 
     if error_occurred:
         logger.error(

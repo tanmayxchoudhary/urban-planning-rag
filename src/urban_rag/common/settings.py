@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     docs_dir: str = "data/docs"
     manifest_path: str = "data/manifest.parquet"
 
+    # Corpus version (set by indexing pipeline, used in tracing/telemetry)
+    corpus_version: str = "unversioned"
+
     # Embedding
     embed_model: str = "vidore/colqwen2.5-v0.2"
     text_embed_model: str = "lightonai/GTE-ModernColBERT-v1"

@@ -522,7 +522,7 @@ async def ask_stream(query_id: str) -> StreamingResponse:
         # Hash the client IP for privacy (we don't log raw IPs)
         import hashlib
         user_hash = hashlib.sha256(query_id.encode()).hexdigest()[:16]
-        corpus_version = "v0.1.0"  # TODO: wire to actual corpus version
+        corpus_version = settings.corpus_version
 
         root_ctx = tracer.start_as_current_span(
             "query",
@@ -988,7 +988,7 @@ async def get_corpus() -> CorpusResponse:
     # TODO: Wire to actual manifest store (LanceDB / parquet)
     # For now, return placeholder data structure
     return CorpusResponse(
-        corpus_version="v0.1.0",
+        corpus_version=settings.corpus_version,
         indexed_at=datetime.now(UTC).isoformat(),
         documents=[],
         totals={"documents": 0, "pages": 0},
@@ -1048,7 +1048,7 @@ async def healthz() -> HealthzResponse:
     return HealthzResponse(
         status="ok",
         version=settings.app_version,
-        corpus_version="v0.1.0",  # TODO: wire to actual corpus version
+        corpus_version=settings.corpus_version,
     )
 
 
