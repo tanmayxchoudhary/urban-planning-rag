@@ -16,6 +16,7 @@ Error envelope: {"error": {"code": "...", "message": "...", "trace_id": "..."}}
 
 from __future__ import annotations
 
+import asyncio
 import json
 import uuid
 from collections import defaultdict
@@ -509,16 +510,33 @@ async def ask_stream(query_id: str) -> StreamingResponse:
             "ts": datetime.now(UTC).isoformat(),
         })
 
-        # Run retrieval
-        retrieval_result = await retrieve_async(
-            query=question,
-            top_k=5,
-            rerank_top_n=5,
-            channel_timeout=15.0,
-            rerank_timeout=30.0,
-            filters={},
-            use_rerank=True,
-        )
+        # Run retrieval with a timeout to prevent SSE from hanging
+        try:
+            retrieval_result = await asyncio.wait_for(
+                retrieve_async(
+                    query=question,
+                    top_k=5,
+                    rerank_top_n=5,
+                    channel_timeout=15.0,
+                    rerank_timeout=30.0,
+                    filters={},
+                    use_rerank=True,
+                ),
+                timeout=20.0,  # SSE stream timeout - must emit events before this
+            )
+        except TimeoutError:
+            # Retrieval timed out - emit error and done immediately
+            _query_store[query_id]["status"] = "error"
+            _query_store[query_id]["error_code"] = RETRIEVAL_TIMEOUT_CODE
+            _query_store[query_id]["error_message"] = "Retrieval timed out. The corpus may be empty or the service is slow."
+            _query_store[query_id]["http_status"] = 504
+            yield _format_sse("error", {
+                "code": RETRIEVAL_TIMEOUT_CODE,
+                "message": "Retrieval timed out. The corpus may be empty or the service is slow.",
+                "stage": "retrieval",
+            })
+            yield _format_sse("done", {"query_id": query_id})
+            return
 
         # Emit retrieval_completed
         candidates_data = [
@@ -555,7 +573,8 @@ async def ask_stream(query_id: str) -> StreamingResponse:
             if event_name == "TokenEvent":
                 yield _format_sse("token", {"text": getattr(event, "chunk", "")})
             elif event_name == "GenerationCompletedEvent":
-                # Store the completed answer
+                # Store the completed answer and update status
+                _query_store[query_id]["status"] = "completed"
                 _query_store[query_id]["answer"] = {
                     "answer_markdown": getattr(event, "answer_markdown", ""),
                     "citations": [c.model_dump() for c in getattr(event, "citations", [])],
@@ -563,12 +582,27 @@ async def ask_stream(query_id: str) -> StreamingResponse:
                     "diagnostics": _safe_model_dump(getattr(event, "diagnostics", None)),
                     "query_id": getattr(event, "query_id", query_id),
                 }
+                # Also emit generation_completed to SSE stream per VAL-API-007
+                yield _format_sse("generation_completed", {
+                    "answer_markdown": getattr(event, "answer_markdown", ""),
+                    "citations": [c.model_dump() for c in getattr(event, "citations", [])],
+                    "confidence": getattr(event, "confidence", "medium"),
+                    "diagnostics": _safe_model_dump(getattr(event, "diagnostics", None)),
+                    "query_id": getattr(event, "query_id", query_id),
+                })
             elif event_name == "RefusedEvent":
+                _query_store[query_id]["status"] = "refused"
+                _query_store[query_id]["refused_reason"] = getattr(event, "reason", "unknown")
+                _query_store[query_id]["refused_message"] = getattr(event, "message", "")
                 yield _format_sse("refused", {
                     "reason": getattr(event, "reason", "unknown"),
                     "message": getattr(event, "message", ""),
                 })
             elif event_name == "ErrorEvent":
+                _query_store[query_id]["status"] = "error"
+                _query_store[query_id]["error_code"] = getattr(event, "code", INTERNAL_CODE)
+                _query_store[query_id]["error_message"] = getattr(event, "message", "")
+                _query_store[query_id]["error_stage"] = getattr(event, "stage", "generation")
                 yield _format_sse("error", {
                     "code": getattr(event, "code", "internal"),
                     "message": getattr(event, "message", ""),
@@ -623,6 +657,23 @@ async def get_answer(query_id: str) -> CompletedAnswerResponse:
 
     entry = _query_store[query_id]
     query_status = entry.get("status", "pending")
+
+    # If still processing, return 202 with processing status
+    if query_status == "pending":
+        raise HTTPException(
+            status_code=status.HTTP_202_ACCEPTED,
+            detail={
+                "error": {
+                    "code": "processing",
+                    "message": (
+                        "Query is still processing. "
+                        "Stream via /v1/ask/{id}/stream for real-time updates."
+                    ),
+                    "trace_id": query_id,
+                }
+            },
+        )
+
     if query_status == "refused":
         raise HTTPException(
             status_code=status.HTTP_200_OK,
