@@ -147,7 +147,7 @@ export default function QueryPage({ params }: QueryPageProps) {
                       key={candidate.page_id}
                       candidate={candidate}
                       index={idx + 1}
-                      onClick={handleOpenLightbox}
+                      onClick={() => handleOpenLightbox(idx)}
                     />
                   ))}
                 </div>
@@ -201,7 +201,7 @@ export default function QueryPage({ params }: QueryPageProps) {
                         section_title: citation.section_path.join(" > ") || null,
                       }}
                       index={idx + 1}
-                      onClick={handleOpenLightbox}
+                      onClick={() => handleOpenLightbox(idx)}
                     />
                   ))}
                 </div>

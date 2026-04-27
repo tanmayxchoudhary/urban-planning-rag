@@ -528,7 +528,9 @@ async def ask_stream(query_id: str) -> StreamingResponse:
             # Retrieval timed out - emit error and done immediately
             _query_store[query_id]["status"] = "error"
             _query_store[query_id]["error_code"] = RETRIEVAL_TIMEOUT_CODE
-            _query_store[query_id]["error_message"] = "Retrieval timed out. The corpus may be empty or the service is slow."
+            _query_store[query_id]["error_message"] = (
+                "Retrieval timed out. The corpus may be empty or the service is slow."
+            )
             _query_store[query_id]["http_status"] = 504
             yield _format_sse("error", {
                 "code": RETRIEVAL_TIMEOUT_CODE,

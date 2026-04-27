@@ -187,17 +187,6 @@ export default function FeedbackWidget({
         </p>
       </div>
 
-      {/* Submit button */}
-      {vote && !isSubmitted && (
-        <button
-          onClick={() => handleVote(vote)}
-          disabled={isSubmitting}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-        >
-          {isSubmitting ? "Submitting..." : "Submit feedback"}
-        </button>
-      )}
-
       {/* Error message */}
       {error && (
         <p className="text-sm text-red-600 mt-2" role="alert">
