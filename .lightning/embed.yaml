@@ -1,0 +1,35 @@
+# Per PLAN.md §11.5
+# Lightning serve configuration for urban-rag-embed service
+# Usage: lightning serve deploy . --config .lightning/embed.yaml
+# Or:   lightning run serve . --config .lightning/embed.yaml
+
+name: urban-rag-embed
+machine: A10G_40GB
+
+replicas:
+  min: 0
+  max: 2
+  scale_up_cooldown: 30s
+  scale_down_cooldown: 300s
+
+healthcheck: /health
+
+ports:
+  - 8001
+
+env:
+  - QDRANT_URL: ${{ secrets.QDRANT_URL }}
+  - QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
+  - HF_TOKEN: ${{ secrets.HF_TOKEN }}
+
+# Build settings
+build:
+  dockerfile: Dockerfile
+  target: embed
+  context: ./
+
+# Optional: readiness probe for traffic routing
+readiness:
+  path: /health
+  initial_delay_seconds: 60
+  period_seconds: 10

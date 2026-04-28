@@ -34,3 +34,9 @@ data/
 .DS_Store
 .vscode/
 .idea/
+
+# Large data
+data/embeddings/
+data/lance_db/
+data/page_images/
+data/*.parquet

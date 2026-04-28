@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -250,7 +250,7 @@ def run_smoke_eval(
     Returns:
         EvalRunResult with per-entry and aggregate results.
     """
-    started_at = datetime.now(tz=timezone.utc)
+    started_at = datetime.now(tz=UTC)
 
     log.info(
         "eval_run_started",
@@ -386,7 +386,7 @@ def run_smoke_eval(
     # Aggregate summary
     passed_entries = sum(1 for e in entry_results if e.passed)
     failed_entries = len(entry_results) - passed_entries
-    finished_at = datetime.now(tz=timezone.utc)
+    finished_at = datetime.now(tz=UTC)
 
     run_result = EvalRunResult(
         dataset_name=dataset_name,

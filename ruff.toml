@@ -36,5 +36,8 @@ ignore = [
     "ARG001", # unused type: ignore comments on parse.py (temporary during development)
 ]
 
+[lint.per-file-ignores]
+"src/urban_rag/eval/__main__.py" = ["B008"]
+
 [lint.isort]
 known-first-party = ["urban_rag"]
