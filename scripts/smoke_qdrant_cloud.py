@@ -33,17 +33,16 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 import numpy as np
 import structlog
 from qdrant_client import models
-from qdrant_client.qdrant_client import QdrantClient
 
+from urban_rag.common.settings import get_settings
 from urban_rag.index.qdrant_client import (
-    COLLECTION_PAGES_VISUAL,
     COLLECTION_PAGES_TEXT,
+    COLLECTION_PAGES_VISUAL,
     COLQWEN_DIM,
     TEXT_EMBED_DIM,
     create_collections,
     get_qdrant_client,
 )
-from urban_rag.common.settings import get_settings
 
 logger = structlog.get_logger(__name__, service="smoke-qdrant")
 
@@ -126,7 +125,8 @@ def run_smoke_test(
 
         # Quick health check
         collections = client.get_collections()
-        log("connected", url=get_settings().qdrant_url, existing_collections=len(collections.collections))
+        log("connected", url=get_settings().qdrant_url,
+            existing_collections=len(collections.collections))
     except Exception as e:
         logger.error("Step 1 FAILED: Could not connect to Qdrant", error=str(e))
         return False
@@ -204,7 +204,9 @@ def run_smoke_test(
             with_payload=True,
         )
 
-        log("query_results", returned=len(results.points), top_score=results.points[0].score if results.points else None)
+        log("query_results",
+            returned=len(results.points),
+            top_score=results.points[0].score if results.points else None)
 
         if len(results.points) == 0:
             logger.error("Step 4 FAILED: Query returned no results")
