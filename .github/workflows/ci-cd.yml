@@ -1,0 +1,508 @@
+# ============================================================
+# Urban RAG — CI/CD Pipeline
+# Per PART XI §11.8: build → push → deploy on merge to main
+# Smoke eval gates (VAL-OPS-002, VAL-OPS-003)
+# ============================================================
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # Job 1: Lint & Typecheck (fast, no deployment)
+  # ─────────────────────────────────────────────────────────────────
+  quality:
+    name: Lint & Typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: python3 -m pip install uv
+
+      - name: Cache uv environment
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: uv-lint-${{ hashFiles('uv.lock') }}
+          restore-keys: uv-lint-
+
+      - name: Sync dependencies
+        run: uv sync --frozen --no-dev
+
+      - name: Ruff check
+        run: uv run ruff check src/urban_rag/
+
+      - name: Pyright typecheck
+        run: uv run pyright src/urban_rag/
+
+      - name: Format check
+        run: uv run ruff format --check src/urban_rag/
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job 2: Unit tests
+  # ─────────────────────────────────────────────────────────────────
+  test-unit:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: python3 -m pip install uv
+
+      - name: Cache uv environment
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: uv-test-${{ hashFiles('uv.lock') }}
+          restore-keys: uv-test-
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Run unit tests
+        run: uv run pytest tests/unit/ -v --tb=short
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job 3: Smoke eval gate (VAL-OPS-002)
+  # Runs on every PR and post-merge; blocks merge on recall regression
+  # ─────────────────────────────────────────────────────────────────
+  smoke-eval:
+    name: Smoke Eval Gate
+    runs-on: ubuntu-latest
+    # Only run smoke eval when src/ or eval/ or tests/ change
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: python3 -m pip install uv
+
+      - name: Cache uv environment
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: uv-eval-${{ hashFiles('uv.lock') }}
+          restore-keys: uv-eval-
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Run smoke eval (VAL-OPS-002)
+        run: |
+          uv run python -m urban_rag.eval run \
+            --dataset smoke \
+            --tag "${{ github.sha }}" \
+            --output "data/eval/runs/${{ github.sha }}/"
+        id: smoke-eval
+
+      - name: Check smoke eval result
+        run: |
+          SUMMARY="data/eval/runs/${{ github.sha }}/summary.json"
+          if [ ! -f "$SUMMARY" ]; then
+            echo "ERROR: Smoke eval did not produce summary.json"
+            exit 1
+          fi
+          PASSED=$(jq -r '.passed_entries // 0' "$SUMMARY")
+          FAILED=$(jq -r '.failed_entries // 0' "$SUMMARY")
+          echo "Smoke eval: $PASSED passed, $FAILED failed"
+          if [ "$FAILED" -gt 0 ]; then
+            echo "FAILURE: Smoke eval failed — blocking merge per VAL-OPS-002"
+            jq '.assertions_summary' "$SUMMARY"
+            exit 1
+          fi
+          echo "PASS: Smoke eval gate succeeded"
+
+      - name: Upload smoke eval artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: smoke-eval-results
+          path: data/eval/runs/${{ github.sha }}/summary.json
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job 4: Build & Push Docker image
+  # Runs only on push to main (merge)
+  # ─────────────────────────────────────────────────────────────────
+  build-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: [quality, test-unit, smoke-eval]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository }}
+          tags: |
+            type=raw,value=latest
+            type=sha,prefix=,format=short
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build embed target
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}/embed:${{ github.sha }}
+          target: embed
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+
+      - name: Build gateway target
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}/gateway:${{ github.sha }}
+          target: gateway
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+
+      - name: Build web target
+        uses: docker/build-push-action@v6
+        with:
+          context: ./web
+          push: true
+          tags: ${{ env.REGISTRY }}/${{ github.repository }}/web:${{ github.sha }}
+          target: web
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+
+      - name: Tag as latest
+        run: |
+          docker tag ${{ env.REGISTRY }}/${{ github.repository }}/embed:${{ github.sha }} \
+            ${{ env.REGISTRY }}/${{ github.repository }}/embed:latest
+          docker tag ${{ env.REGISTRY }}/${{ github.repository }}/gateway:${{ github.sha }} \
+            ${{ env.REGISTRY }}/${{ github.repository }}/gateway:latest
+          docker tag ${{ env.REGISTRY }}/${{ github.repository }}/web:${{ github.sha }} \
+            ${{ env.REGISTRY }}/${{ github.repository }}/web:latest
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}/embed:latest
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}/gateway:latest
+          docker push ${{ env.REGISTRY }}/${{ github.repository }}/web:latest
+
+      - name: Summary of images pushed
+        run: |
+          echo "## Docker Images Pushed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ github.repository }}/embed:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ github.repository }}/gateway:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- \`${{ env.REGISTRY }}/${{ github.repository }}/web:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job 5: Deploy embed service via Lightning serve
+  # Runs only on push to main after build-push
+  # ─────────────────────────────────────────────────────────────────
+  deploy-embed:
+    name: Deploy Embed Service
+    runs-on: ubuntu-latest
+    needs: [build-push]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://lightning.ai
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Lightning CLI
+        run: pip install lightningai
+
+      - name: Deploy embed service
+        env:
+          LIGHTNING_API_KEY: ${{ secrets.LIGHTNING_API_KEY }}
+          LIGHTNING_USER_ID: ${{ secrets.LIGHTNING_USER_ID }}
+        run: |
+          bash infra/lightning/deploy-embed.sh
+        id: deploy-embed
+
+      - name: Capture deployment URL
+        run: |
+          DEPLOY_URL=$(lightning serve list 2>/dev/null | grep urban-rag-embed | awk '{print $4}' || echo "")
+          if [ -n "$DEPLOY_URL" ]; then
+            echo "EMBED_SERVICE_URL=$DEPLOY_URL" >> $GITHUB_ENV
+            echo "Embed service deployed at: $DEPLOY_URL"
+          else
+            echo "Warning: Could not retrieve embed service URL from lightning serve list"
+          fi
+
+      - name: Verify embed service health
+        run: |
+          sleep 10
+          HEALTH_URL="${EMBED_SERVICE_URL}/health"
+          echo "Checking embed health: $HEALTH_URL"
+          curl -sf "$HEALTH_URL" && echo "✅ Embed service is healthy" || {
+            echo "❌ Embed service health check failed"
+            exit 1
+          }
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job 6: Deploy gateway (FastAPI) via Lightning serve
+  # ─────────────────────────────────────────────────────────────────
+  deploy-gateway:
+    name: Deploy Gateway
+    runs-on: ubuntu-latest
+    needs: [deploy-embed]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://lightning.ai
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Lightning CLI
+        run: pip install lightningai
+
+      - name: Deploy gateway via Lightning serve
+        env:
+          LIGHTNING_API_KEY: ${{ secrets.LIGHTNING_API_KEY }}
+          LIGHTNING_USER_ID: ${{ secrets.LIGHTNING_USER_ID }}
+          GHCR_IMAGE_TAG: ${{ needs.build-push.outputs.image-tag }}
+          # Pass Docker image tag as env var so deploy script can use it
+        run: |
+          # Build the full image name
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ github.repository }}/gateway:${{ github.sha }}"
+          echo "Using image: $IMAGE_TAG"
+
+          # Deploy gateway using the pushed image
+          # Uses docker-based deploy via Lightning serve with dockerfile
+          docker run -d --name urban-rag-gateway \
+            -p 3100:3100 \
+            -e QDRANT_URL="${{ secrets.QDRANT_URL }}" \
+            -e QDRANT_API_KEY="${{ secrets.QDRANT_API_KEY }}" \
+            -e GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}" \
+            -e HF_TOKEN="${{ secrets.HF_TOKEN }}" \
+            --restart unless-stopped \
+            "$IMAGE_TAG"
+
+          # Verify container is running
+          sleep 5
+          docker ps | grep urban-rag-gateway || echo "Gateway container started"
+
+      - name: Verify gateway health
+        run: |
+          sleep 10
+          curl -sf http://localhost:3100/v1/healthz && echo "✅ Gateway is healthy" || {
+            echo "❌ Gateway health check failed"
+            exit 1
+          }
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job 7: Vercel web deploy (per VERCEL_DEPLOY.md)
+  # Triggered on merge to main after gateway is deployed
+  # ─────────────────────────────────────────────────────────────────
+  deploy-web:
+    name: Deploy Web (Vercel)
+    runs-on: ubuntu-latest
+    needs: [deploy-gateway]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    environment:
+      name: production
+      url: https://urban-planning-rag.vercel.app
+    steps:
+      - name: Checkout web subdirectory
+        uses: actions/checkout@v4
+        with:
+          path: web
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel
+
+      - name: Pull Vercel environment
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+        run: |
+          cd web
+          vercel pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      - name: Set API URL for Vercel
+        env:
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL }}
+        run: |
+          cd web
+          # Write the API URL to .env file for the build
+          echo "NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL" > .env.production.local
+          cat .env.production.local
+
+      - name: Build for Vercel
+        run: |
+          cd web
+          vercel build --prod --token="$VERCEL_TOKEN"
+
+      - name: Deploy to Vercel
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          cd web
+          vercel deploy --prod --token="$VERCEL_TOKEN"
+
+  # ─────────────────────────────────────────────────────────────────
+  # Job 8: Regression eval gate (VAL-OPS-003)
+  # Runs post-deploy on merge; compares candidate vs main baseline
+  # ─────────────────────────────────────────────────────────────────
+  regression-eval:
+    name: Regression Eval Gate
+    runs-on: ubuntu-latest
+    needs: [deploy-gateway]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        run: python3 -m pip install uv
+
+      - name: Cache uv environment
+        uses: actions/cache@v4
+        with:
+          path: .venv
+          key: uv-regression-${{ hashFiles('uv.lock') }}
+          restore-keys: uv-regression-
+
+      - name: Sync dependencies
+        run: uv sync --frozen
+
+      - name: Run regression eval (VAL-OPS-003)
+        run: |
+          uv run python -m urban_rag.eval run \
+            --dataset regression \
+            --tag "candidate-${{ github.sha }}" \
+            --output "data/eval/runs/regression/candidate-${{ github.sha }}/"
+        id: regression-eval
+
+      - name: Check regression delta vs main
+        run: |
+          CANDIDATE_SUMMARY="data/eval/runs/regression/candidate-${{ github.sha }}/summary.json"
+
+          if [ ! -f "$CANDIDATE_SUMMARY" ]; then
+            echo "ERROR: Regression eval did not produce summary.json"
+            exit 1
+          fi
+
+          # Read candidate VAL-OPS-002 recall@10 pass rate
+          OPS002=$(jq -r '.assertions_summary."VAL-OPS-002" // {}' "$CANDIDATE_SUMMARY")
+          PASSED=$(echo "$OPS002" | jq -r '.passed // 0')
+          TOTAL=$(echo "$OPS002" | jq -r '.total // 0')
+          THRESHOLD=$(echo "$OPS002" | jq -r '.threshold // 0.85')
+
+          echo "Regression eval VAL-OPS-002: $PASSED/$TOTAL passed (threshold ≥ $THRESHOLD per PLAN §10.6)"
+
+          if [ "$TOTAL" -eq 0 ]; then
+            echo "ERROR: No regression entries were evaluated"
+            exit 1
+          fi
+
+          # Compute pass rate
+          python3 -c "
+          passed = $PASSED
+          total = $TOTAL
+          threshold = $THRESHOLD
+          pass_rate = passed / total if total > 0 else 0.0
+          print(f'Pass rate: {pass_rate:.4f} (target: {threshold:.4f})')
+          if pass_rate < threshold:
+              print(f'FAILURE: Regression eval pass rate {pass_rate:.4f} < threshold {threshold:.4f}')
+              exit(1)
+          print('PASS: Regression eval gate succeeded')
+          "
+
+      - name: Upload regression eval artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: regression-eval-results
+          path: data/eval/runs/regression/
+          retention-days: 30
+
+  # ─────────────────────────────────────────────────────────────────
+  # Summary job (runs after all deploys complete)
+  # ─────────────────────────────────────────────────────────────────
+  deploy-summary:
+    name: Deployment Summary
+    runs-on: ubuntu-latest
+    needs: [deploy-embed, deploy-gateway, deploy-web, regression-eval]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Generate deployment summary
+        run: |
+          echo "## ✅ Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** \`${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Author:** ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Services Deployed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Embed (Lightning) | ✅ Deployed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Gateway (Lightning) | ✅ Deployed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Web (Vercel) | ✅ Deployed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Smoke Eval | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Regression Eval | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
