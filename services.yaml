@@ -1,0 +1,68 @@
+# Services and Commands Manifest
+# Single source of truth for all commands and services.
+# DO NOT start services any other way.
+
+commands:
+  install: uv sync
+  typecheck: pyright src/urban_rag/
+  lint: ruff check src/urban_rag/
+  format: ruff format src/urban_rag/
+  test: pytest tests/unit/ -v
+  test-integration: pytest tests/integration/ -v
+  test-smoke: python -m src.eval run --dataset smoke
+  embed-build: python -m urban_rag.scripts.embed --docs-dir ./pdfs --output-dir ./data
+  ingest: python -m urban_rag.cli ingest
+  corpus-list: python -m urban_rag.cli corpus list
+  corpus-stats: python -m urban_rag.cli corpus stats
+  query: python -m urban_rag.cli query
+  api: uvicorn urban_rag.api.main:app --host 0.0.0.0 --port 3100
+  web: cd web && npm run dev -- --port 3101
+  eval-run: python -m src.eval run
+  qdrant-cloud-smoke: python scripts/smoke_qdrant_cloud.py
+  lightning-bootstrap: bash infra/lightning/bootstrap.sh
+  lightning-deploy-embed: bash infra/lightning/deploy-embed.sh
+  lightning-rollback: bash infra/lightning/rollback.sh
+  lightning-index: bash infra/lightning/run-index-job.sh
+
+services:
+  api:
+    start: uvicorn urban_rag.api.main:app --host 0.0.0.0 --port 3100
+    stop: lsof -ti :3100 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:3100/v1/healthz
+    port: 3100
+    depends_on: []
+
+  web:
+    start: cd web && npm run dev -- --port 3101
+    stop: lsof -ti :3101 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:3101
+    port: 3101
+    depends_on: [api]
+
+  embed:
+    start: uvicorn urban_rag.embed.serve:app --host 0.0.0.0 --port 3102
+    stop: lsof -ti :3102 | xargs kill 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:3102/health
+    port: 3102
+    depends_on: []
+
+  qdrant:
+    start: docker run -d --name urban-rag-qdrant -p 3103:6333 qdrant/qdrant
+    stop: docker stop urban-rag-qdrant; docker rm urban-rag-qdrant 2>/dev/null || true
+    healthcheck: curl -sf http://localhost:3103/collections
+    port: 3103
+    depends_on: []
+
+  postgres:
+    start: docker start antigravity_postgres || true
+    stop: docker stop antigravity_postgres 2>/dev/null || true
+    healthcheck: pg_isready -h localhost -p 5432
+    port: 5432
+    depends_on: []
+
+  lightning-embed:
+    start: lightning serve deploy . --config .lightning/embed.yaml --studio urban-rag-prod-embed
+    stop: lightning serve stop urban-rag-embed --studio urban-rag-prod-embed
+    healthcheck: curl -sf $(lightning serve url urban-rag-embed --studio urban-rag-prod-embed 2>/dev/null)/health
+    port: 8001
+    depends_on: []

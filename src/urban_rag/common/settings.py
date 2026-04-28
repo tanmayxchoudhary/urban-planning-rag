@@ -43,6 +43,7 @@ class Settings(BaseSettings):
     qdrant_host: str = "localhost"
     qdrant_port: int = 6333
     qdrant_url: str = Field(default="http://localhost:6333", description="Full Qdrant server URL")
+    qdrant_api_key: str | None = Field(default=None, description="Qdrant API key for cloud authentication")
     qdrant_collection_visual: str = "pages_visual"
     qdrant_collection_text: str = "pages_text"
 
