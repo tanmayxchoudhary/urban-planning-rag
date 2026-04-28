@@ -38,6 +38,7 @@ ignore = [
 
 [lint.per-file-ignores]
 "src/urban_rag/eval/__main__.py" = ["B008"]
+"scripts/*.py" = ["B008"]
 
 [lint.isort]
 known-first-party = ["urban_rag"]
