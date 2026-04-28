@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api";
 
 interface CorpusDocument {
   doc_hash: string;
@@ -35,7 +36,7 @@ export default function CorpusPage() {
       timeoutId = setTimeout(() => controller.abort(), 8000);
 
       try {
-        const response = await fetch("/v1/corpus", { signal: controller.signal });
+        const response = await fetch(apiUrl("/v1/corpus"), { signal: controller.signal });
         clearTimeout(timeoutId);
         if (!response.ok) {
           throw new Error(`Failed to fetch corpus: ${response.status}`);

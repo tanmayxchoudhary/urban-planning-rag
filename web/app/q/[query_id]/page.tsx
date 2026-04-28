@@ -144,6 +144,7 @@ export default function QueryPage({ params }: { params: { query_id: string } }) 
                       candidate={candidate}
                       index={idx + 1}
                       onClick={() => handleOpenLightbox(idx)}
+                      queryId={query_id}
                     />
                   ))}
                 </div>
@@ -198,6 +199,7 @@ export default function QueryPage({ params }: { params: { query_id: string } }) 
                       }}
                       index={idx + 1}
                       onClick={() => handleOpenLightbox(idx)}
+                      queryId={query_id}
                     />
                   ))}
                 </div>

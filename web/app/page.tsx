@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, FormEvent } from "react";
 import { useStreamingQuery } from "@/hooks/useStreamingQuery";
 import CitationChip from "@/components/CitationChip";
+import { apiUrl } from "@/lib/api";
 
 const EXAMPLE_QUESTIONS = [
   "What is the FAR for residential use in Mumbai?",
@@ -35,7 +36,7 @@ export default function Home() {
       timeoutId = setTimeout(() => controller.abort(), 8000);
 
       try {
-        const response = await fetch("/v1/corpus", { signal: controller.signal });
+        const response = await fetch(apiUrl("/v1/corpus"), { signal: controller.signal });
         clearTimeout(timeoutId);
         if (!response.ok) {
           throw new Error(`Failed to fetch corpus: ${response.status}`);

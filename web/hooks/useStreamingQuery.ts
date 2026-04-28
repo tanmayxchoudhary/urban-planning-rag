@@ -9,6 +9,8 @@ import {
   Citation,
   GenerationCompletedEvent,
 } from "@/lib/sse-types";
+import { apiUrl } from "@/lib/api";
+import { trackEvent } from "@/lib/analytics";
 
 interface UseStreamingQueryOptions {
   onRetrievalCompleted?: (candidates: CitationCandidate[]) => void;
@@ -64,7 +66,7 @@ export function useStreamingQuery(options: UseStreamingQueryOptions = {}) {
 
       try {
         // Submit query
-        const submitResponse = await fetch("/v1/ask", {
+        const submitResponse = await fetch(apiUrl("/v1/ask"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question, mode }),
@@ -80,11 +82,14 @@ export function useStreamingQuery(options: UseStreamingQueryOptions = {}) {
 
         setState((prev) => ({ ...prev, queryId: query_id }));
 
+        // Track query submission
+        await trackEvent({ type: "query_submitted", question, mode });
+
         // Navigate to query page (defer to after render to avoid React setState-during-render error)
         queueMicrotask(() => router.push(`/q/${query_id}`));
 
         // Connect to SSE stream
-        const streamResponse = await fetch(stream_url, {
+        const streamResponse = await fetch(apiUrl(stream_url), {
           signal: abortControllerRef.current.signal,
         });
 
@@ -116,6 +121,12 @@ export function useStreamingQuery(options: UseStreamingQueryOptions = {}) {
                 ...prev,
                 citations: event.data.citations,
               }));
+              // Track answer received with query_id from state
+              await trackEvent({
+                type: "answer_received",
+                query_id: state.queryId || query_id,
+                confidence: event.data.confidence,
+              });
               options.onGenerationCompleted?.(event.data);
               break;
 

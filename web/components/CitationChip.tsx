@@ -2,19 +2,30 @@
 
 import { useRef, useCallback } from "react";
 import { CitationCandidate } from "@/lib/sse-types";
+import { trackEvent } from "@/lib/analytics";
 
 interface CitationChipProps {
   candidate: CitationCandidate;
   index: number;
   onClick?: (index: number) => void;
+  queryId?: string;
 }
 
-export default function CitationChip({ candidate, index, onClick }: CitationChipProps) {
+export default function CitationChip({ candidate, index, onClick, queryId }: CitationChipProps) {
   const buttonRef = useRef<HTMLButtonElement>(null);
 
   const handleClick = useCallback(() => {
     onClick?.(index);
-  }, [onClick, index]);
+    // Track citation click if queryId is provided
+    if (queryId) {
+      trackEvent({
+        type: "citation_clicked",
+        query_id: queryId,
+        page_id: candidate.page_id,
+        doc_filename: candidate.extracted_text_excerpt?.slice(0, 50) || candidate.page_id,
+      });
+    }
+  }, [onClick, index, queryId, candidate]);
 
   // Handle keyboard activation
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -1,0 +1,54 @@
+# Vercel deployment exclusions
+# Dependencies - installed via npm install
+node_modules/
+
+# Next.js build output
+.next/
+out/
+
+# Development files
+tests/
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Documentation
+README.md
+*.md
+
+# TypeScript config
+tsconfig.json
+tsconfig.tsbuildinfo
+
+# ESLint
+.eslintrc.json
+
+# Tailwind config (included in build)
+tailwind.config.ts
+postcss.config.mjs
+
+# Test results
+test-results/
+
+# Git
+.git/
+.gitignore
+
+# Vercel local
+.vercel/
+
+# Static files that are generated during build
+web/app/fonts/
+web/app/favicon.ico
+
+# Data directory (shouldn't be deployed)
+data/
+
+# Python source (backend only)
+src/

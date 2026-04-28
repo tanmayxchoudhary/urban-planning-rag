@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+import { apiUrl } from "@/lib/api";
+import { trackEvent } from "@/lib/analytics";
 
 interface FeedbackWidgetProps {
   queryId: string;
@@ -31,7 +33,7 @@ export default function FeedbackWidget({
       setError(null);
 
       try {
-        const response = await fetch("/v1/feedback", {
+        const response = await fetch(apiUrl("/v1/feedback"), {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -43,6 +45,13 @@ export default function FeedbackWidget({
 
         if (response.status === 204) {
           setIsSubmitted(true);
+          // Track feedback submission
+          await trackEvent({
+            type: "feedback_submitted",
+            query_id: queryId,
+            vote: selectedVote,
+            comment: comment.trim() || undefined,
+          });
           onFeedbackSubmitted?.(selectedVote, comment.trim() || undefined);
         } else {
           const errorData = await response.json().catch(() => ({}));
