@@ -40,3 +40,14 @@ data/embeddings/
 data/lance_db/
 data/page_images/
 data/*.parquet
+
+# Meta / Agent / Infrastructure stuff
+.claude/
+.lightning/
+.deepeval/
+.factory/
+root/
+docs/runbooks/
+PLAN.md
+Dockerfile
+.dockerignore

@@ -30,6 +30,7 @@ class Settings(BaseSettings):
 
     # Corpus paths
     docs_dir: str = "data/docs"
+    page_images_dir: str = "data/page_images"
     manifest_path: str = "data/manifest.parquet"
 
     # Corpus version (set by indexing pipeline, used in tracing/telemetry)

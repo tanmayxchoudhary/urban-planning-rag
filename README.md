@@ -1,12 +1,12 @@
 # Urban Planning RAG 🏙️
 
-**Visual document retrieval system for Indian urban planning regulations**
+**Visual RAG system for Indian urban planning regulations**
 
-Query planning documents (NBC, URDPFI, SWM) using state-of-the-art multimodal AI. Get accurate answers with precise page citations.
+A production-grade multimodal retrieval system that indexes planning documents (NBC, URDPFI, SWM Rules) as page images, embeds them with ColQwen2.5 visual encoders, and answers questions via Gemini 2.5 Flash with precise page citations.
 
 ---
 
-## 🎯 What This Does
+## What This Does
 
 Ask questions like:
 - *"What is the FSI for residential zones?"*
@@ -14,345 +14,246 @@ Ask questions like:
 - *"What are the indicators of good governance?"*
 
 The system:
-1. **Retrieves** relevant pages from planning documents using visual embeddings
-2. **Generates** accurate answers using Gemini VLM
-3. **Cites** specific page numbers as sources
+1. **Retrieves** relevant pages using 3-channel parallel search (visual + text + sparse BM25)
+2. **Fuses** results with Reciprocal Rank Fusion (RRF k=60)
+3. **Reranks** with Gemini 2.5 Flash VLM cross-encoder
+4. **Generates** streaming answers with confidence levels and inline page citations
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
-- **Embeddings**: TomoroAI/tomoro-colqwen3-embed-4b (multi-vector visual retrieval, 8GB VRAM)
-- **Vector DB**: ChromaDB (patch-level indexing with MaxSim reranking)
-- **Retrieval**: Two-stage pipeline (Multi-Query Expansion + MaxSim late interaction)
-- **VLM**: Gemini 3.0 Flash / 2.5 Flash (Google AI Studio API)
-- **Deployment**: Cloud GPU ready with API endpoints
+### Embedding
+- **Visual**: `vidore/colqwen2.5-v0.2` — 128-dim multi-vector per patch (ColPali-style late interaction)
+- **Text**: `lightonai/GTE-ModernColBERT-v1` — 768-dim multi-vector per token (ModernBERT late interaction)
 
-**Why visual RAG?**  
-Planning documents contain tables, diagrams, flowcharts, and color-coded maps. Traditional OCR destroys spatial layout and visual context. Our system embeds entire page images, preserving all visual information.
+### Vector DB
+- **Qdrant** with two collections:
+  - `pages_visual` — ColQwen2.5 multi-vector with MAX_SIM comparator + INT8 scalar quantization
+  - `pages_text` — GTE-ModernColBERT multi-vector (text + BM25 sparse)
+
+### Retrieval Pipeline
+```
+Query → 3-channel parallel search (visual/text/sparse BM25)
+      → RRF k=60 fusion (top-20 per channel → top-20 fused)
+      → Gemini 2.5 Flash VLM rerank (top-20 → top-5)
+```
+
+- **Visual**: ColQwen2.5 query encoding → Qdrant ANN (200 pooled) → MaxSim rerank → top 20
+- **Text**: GTE-ModernColBERT query encoding → Qdrant ANN (200 pooled) → MaxSim rerank → top 20
+- **Sparse**: BM25 query scoring → Qdrant sparse vector search → top 20
+- **Fusion**: RRF k=60 across all three channels
+- **Rerank**: Gemini 2.5 Flash cross-encoder scores page images → top 5
+
+### Generation
+- **Streaming Gemini 2.5 Flash** client with SSE events
+- Confidence levels per claim, inline `[k]` citation markers
+- Grounded in retrieved page images sent alongside the query
+
+### API
+- **FastAPI** gateway on port 3100
+- SSE streaming for query responses
+- `/v1/query` — streaming query endpoint
+- `/v1/healthz` — health check
+- `/metrics` — Prometheus metrics
+
+### Web
+- **Next.js 14 App Router** (`web/` directory)
+- Streaming query via Server-Sent Events
+- Citation lightbox (click `[k]` to view the source page)
+- Thumbs up/down feedback buttons
+
+### Observability
+- **Langfuse** tracing (per-query spans, OTel-compatible)
+- **Prometheus** metrics (`qdrant_latency_seconds`, `gemini_cost_usd_total`, `faithfulness_p50`)
+- **Grafana** dashboards (see `infra/grafana/`)
+
+### Evaluation
+- `eval/smoke.jsonl` — 25 hand-curated questions (CI gate on every PR)
+- `eval/regression.jsonl` — 106 questions including adversarial probes
+- **RAGAS** metrics: faithfulness, answer_relevance, context_precision, context_recall, answer_correctness
+- CI gates: recall@10 ≥ 0.85, faithfulness ≥ 0.85
 
 ---
 
-## 📚 Indexed Documents
+## Corpus Status
 
-- **SWM 2016** (Solid Waste Management) - 91 pages
-- **URDPFI Vol 1** (Urban and Regional Development Plans) - 447 pages
-- **URDPFI Vol 2** - 251 pages
-- **NBC** (National Building Code) - 2258 pages
-
-**Total**: 3,047 pages indexed
-
----
-
-## 🚀 Quick Start
-
-### 1. Clone Repository
-
-```bash
-git clone https://github.com/tanmayxchoudhary/urban-planning-rag.git
-cd urban-planning-rag
-```
-
-### 2. Install Dependencies
-
-```bash
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install Python packages
-pip install -r requirements.txt
-```
-
-> **v3.0.0**: Unified embedding script with comprehensive error handling. No system dependencies required!
-
-### 3. Download Data Files
-
-The embeddings and page images are too large for GitHub (>1GB total).
-
-**Download from:** [Google Drive Link - https://drive.google.com/drive/folders/1cAXUc5Yk24spGDQOxczJgCYYWd0ORlPx]
-
-Extract and place files in this structure:
-```
-data/
-├── embeddings/
-│   ├── embeddings.pt       (573 MB)
-│   └── metadata.json
-└── page_images/
-    ├── swm_2016__page_0001.png
-    ├── swm_2016__page_0002.png
-    ├── ...
-    └── urdpfi_vol2__page_0251.png
-```
-
-**Want to embed your own documents?** See `scripts/README.md` for complete guide.
-
-### 4. Set Up Gemini API Key
-
-Get a free API key from [Google AI Studio](https://aistudio.google.com/)
-
-Create `.env` file in project root:
-```bash
-GEMINI_API_KEY=your-key-here
-```
-
-### 5. Run Your First Query
-
-```bash
-# Using the pipeline
-python scripts/pipeline.py --query "What is FSI for residential zones?"
-
-# Or using the CLI
-python cli.py "What is FSI for residential zones?"
-```
+| Stat | Value |
+|------|-------|
+| Documents indexed | 8 |
+| Total pages | 743 PNG renders |
+| Corpus ready to scale | Yes — 200+ documents queued once source URLs are resolved |
 
 ---
 
-## 💻 Usage
+## Quick Start
 
-### Pipeline Script (Recommended)
+### 1. Install dependencies
 
 ```bash
-# Full pipeline: embed + index + query
-python scripts/pipeline.py --docs-dir ./pdfs --query "What is FSI?"
-
-# Check data status
-python scripts/pipeline.py --check
-
-# Individual steps
-python scripts/pipeline.py --docs-dir ./pdfs --step embed
-python scripts/pipeline.py --step index
-python scripts/pipeline.py --query "Parking requirements" --step query
+uv sync
 ```
 
-### Command Line Interface
+### 2. Configure environment
 
-**Basic query:**
+Copy `.env.example` to `.env` and fill in required values:
+
 ```bash
-python cli.py "What are parking requirements?"
+# Google Gemini API (required)
+GEMINI_API_KEY=your_gemini_api_key_here
+
+# Qdrant vector database
+QDRANT_URL=http://localhost:6333
+QDRANT_API_KEY=your_qdrant_api_key_here   # optional for local
+
+# Langfuse tracing (optional)
+LANGFUSE_PUBLIC_KEY=your_langfuse_public_key
+LANGFUSE_SECRET_KEY=your_langfuse_secret_key
+LANGFUSE_HOST=https://cloud.langfuse.com
 ```
 
-**Retrieve more pages:**
+See `.env.example` for the full template.
+
+### 3. Ingest documents
+
 ```bash
-python cli.py --query "open space standards" --top-k 5
+# Ingest a single PDF
+python -m urban_rag.cli ingest ./path/to/document.pdf
+
+# Ingest all PDFs in a directory
+python -m urban_rag.cli ingest ./pdfs/
+
+# Corpus management
+python -m urban_rag.cli corpus list
+python -m urban_rag.cli corpus stats
 ```
 
-**Use different Gemini model:**
+### 4. Query the corpus
+
 ```bash
-python cli.py "building height regulations" --model gemini-2.5-flash
+# Streaming query via CLI
+python -m urban_rag.cli query "What is FSI for residential zones?"
+
+# Retrieve-only mode (no generation)
+python -m urban_rag.cli query "parking requirements" --retrieve-only
+
+# Control top-k candidates
+python -m urban_rag.cli query "open space standards" --top-k 10
 ```
 
-**Retrieve only (no answer generation):**
+### 5. Run services
+
 ```bash
-python cli.py "FSI regulations" --retrieve-only
+# Start the FastAPI gateway (port 3100)
+uvicorn urban_rag.api.main:app --host 0.0.0.0 --port 3100
+
+# Start the embed service (port 3102)
+uvicorn urban_rag.embed.serve:app --host 0.0.0.0 --port 3102
+
+# Start Qdrant (Docker)
+docker run -d --name urban-rag-qdrant -p 3103:6333 qdrant/qdrant
+
+# Start the Next.js web UI (port 3101)
+cd web && npm run dev -- --port 3101
 ```
 
-### Python API
+### 6. Run evaluation
 
-```python
-from src.rag import UrbanPlanningRAG
+```bash
+# Smoke eval (25 questions, CI gate)
+python -m src.eval run --dataset smoke
 
-# Initialize RAG system
-rag = UrbanPlanningRAG(data_dir="./data")
+# Regression eval (106 questions, weekly)
+python -m src.eval run --dataset regression
 
-# Get answer with citations
-answer = rag.answer_query("What is FSI for residential zones?", top_k=3)
-print(answer)
+# Run tests
+pytest tests/unit/ -v
+pytest tests/integration/ -v
+```
 
-# Or just retrieve relevant pages
-results = rag.retrieve(query="parking requirements", top_k=5)
-for r in results:
-    print(f"{r['source']} - Page {r['page']}")
+### 7. Lint and typecheck
+
+```bash
+ruff check src/urban_rag/
+ruff format src/urban_rag/
+pyright src/urban_rag/
 ```
 
 ---
 
-## ⚙️ How It Works
-
-### 1. Document Embedding (One-Time, GPU Required)
-
-PDFs are converted to images and embedded using ColQwen.
-
-**Using the unified script:**
-```bash
-# On Lightning.ai, Colab, or local GPU (8GB+ VRAM)
-python scripts/embed.py --docs-dir ./pdfs --output-dir ./data
-
-# With verbose logging
-python scripts/embed.py --docs-dir ./pdfs --verbose
-
-# Custom batch size for memory constraints
-python scripts/embed.py --docs-dir ./pdfs --batch-size 10
-```
-
-**Process (v3.0.0):**
-```
-PDF → PageClassifier (adaptive DPI) → ColQwen3-4B → Variable-length embeddings
-```
-
-**Output:**
-- `embeddings.pt` - Page embeddings (variable patch counts × 320 dimensions)
-- `metadata.json` - Page metadata (source, page number, DPI, page type)
-- `page_images/` - PNG files at adaptive DPI (100 or 250)
-
-### 2. Query Pipeline
-
-**Query Pipeline (v3.0.0):**
-```
-User Query → ColQwen Encoding → ChromaDB Multi-Query Expansion → MaxSim Reranking → Gemini VLM → Answer
-```
-
-**GPU Requirements:**
-- **Document embedding:** Requires GPU (8GB+ VRAM) - one-time operation
-- **Query encoding:** Requires GPU (same model) - per query
-- **Retrieval + Generation:** Works on CPU
-
----
-
-## 📂 Project Structure
+## Project Structure
 
 ```
 urban-planning-rag/
-├── README.md                    # This file
-├── requirements.txt             # Python dependencies
-├── cli.py                       # Command-line interface
-├── .env                         # API keys (create this, not tracked)
-│
-├── src/
-│   ├── rag.py                   # Main RAG class
-│   ├── indexer_optimized.py     # Optimized ChromaDB indexing
-│   └── __init__.py
-│
-├── scripts/                     # Core scripts (see scripts/README.md)
-│   ├── embed.py                 # Unified embedding script (v3.0.0)
-│   ├── pipeline.py              # End-to-end pipeline
-│   ├── check_docs.py            # PDF inspection utility
-│   ├── test_gemini.py           # Test Gemini API connection
-│   └── archive/                 # Old versioned scripts
-│
-├── notebooks/                   # Development notebooks
-│   ├── embed_docs.ipynb         # Document embedding pipeline
-│   └── rag.ipynb                # Complete RAG system
-│
-├── data/                        # Data files (gitignored)
-│   ├── embeddings/
-│   │   ├── embeddings.pt
-│   │   └── metadata.json
-│   └── page_images/
-│
-└── docs/                        # Documentation
-    └── setup.md                 # Detailed setup guide
+├── src/urban_rag/
+│   ├── api/              # FastAPI gateway (main.py, /v1/query streaming endpoint)
+│   ├── embed/            # ColQwen2.5 + GTE-ModernColBERT encoder loaders
+│   │   ├── colqwen.py    # Visual embedding model
+│   │   ├── text_encoder.py  # Text embedding model
+│   │   └── serve.py      # Embed service (uvicorn, port 3102)
+│   ├── index/            # Qdrant batch indexers (visual, text, BM25 sparse)
+│   │   ├── batch.py      # Visual index (ColQwen2.5 → Qdrant pages_visual)
+│   │   ├── text_index.py # Text index (GTE-ModernColBERT → Qdrant pages_text)
+│   │   └── sparse.py     # Sparse BM25 indexer
+│   ├── retrieve/         # Query execution
+│   │   ├── visual.py     # Visual channel (Qdrant ANN + MaxSim)
+│   │   ├── text.py       # Text channel (GTE-ModernColBERT + MaxSim)
+│   │   ├── sparse.py     # Sparse BM25 channel (Qdrant native sparse)
+│   │   ├── rerank.py     # Gemini 2.5 Flash VLM cross-encoder rerank
+│   │   └── orchestrator.py  # 3-channel RRF fusion + orchestrates retrieval
+│   ├── generate/         # Gemini streaming generation
+│   │   ├── gemini.py     # Streaming client with SSE parsing
+│   │   ├── orchestrator.py  # Grounded generation with citations
+│   │   └── prompts.py   # Prompt templates (fast/deep modes)
+│   ├── ingest/           # PDF parse + render ingest pipeline
+│   │   ├── load.py       # PDF validation and hashing
+│   │   ├── parse.py      # Docling/Marker markdown extraction
+│   │   ├── classify.py   # Per-page DPI classifier (text vs visual)
+│   │   ├── render.py     # PDF → PNG at adaptive DPI (100/250)
+│   │   ├── chunk.py      # Text chunking with overlap
+│   │   └── sections.py   # Section boundary detection
+│   ├── eval/             # RAGAS metrics + smoke/regression CI gates
+│   │   └── metrics/
+│   │       └── ragas_wrapper.py  # Pinned judge model, reproducible scores
+│   ├── telemetry/        # Observability
+│   │   ├── tracing.py    # Langfuse OTel spans
+│   │   └── metrics.py    # Prometheus gauges and histograms
+│   ├── cli/              # Typer CLI commands (ingest, corpus, query)
+│   └── common/           # Settings, types, logging, errors
+├── web/                  # Next.js 14 App Router frontend
+│   ├── app/
+│   │   └── page.tsx     # Main query UI
+│   └── lib/
+│       └── api.ts        # SSE streaming client
+├── eval/
+│   ├── smoke.jsonl       # 25 CI gate questions
+│   └── regression.jsonl  # 106 regression questions
+├── infra/
+│   ├── lightning/        # Lightning AI GPU deployment scripts
+│   └── grafana/         # Dashboard configs
+└── services.yaml        # Service commands manifest (single source of truth)
 ```
 
 ---
 
-## 🔧 Technical Details
+## Deferred Items (Require Credentials)
 
-### Embeddings
+The following are not yet deployed — pending infrastructure credentials:
 
-- **Model**: TomoroAI/tomoro-colqwen3-embed-4b
-- **Architecture**: ColPali-style multi-vector embeddings
-- **Output**: Variable patch vectors per page (320-dim each)
-- **Storage**: List of tensors with variable patch counts
-- **VRAM**: 8GB (down from 16GB in v1.0.0)
-
-### Retrieval (v3.0.0)
-
-- **Index**: ChromaDB PersistentClient (patch-level)
-- **Stage 1**: Multi-Query Token Expansion
-- **Stage 2**: MaxSim late-interaction reranking
-- **Speed**: ~50ms per query on CPU
-
-### Generation
-
-- **Model**: Gemini 3.0 Flash Preview / Gemini 2.5 Flash
-- **Input**: Natural language query + top-k page images
-- **Output**: Answer with page citations
-- **Cost**: Free tier (1500 requests/day)
+- **GPU embed service** on Lightning AI Studios (LitServe) — deploy with `infra/lightning/deploy-embed.sh`
+- **Qdrant Cloud** production cluster — update `QDRANT_URL` and `QDRANT_API_KEY` in `.env`
+- **Vercel web deployment** — see `web/VERCEL_DEPLOY.md`
 
 ---
 
-## 🆕 What's New in v3.0.0
+## Why Visual RAG?
 
-### Major Improvements
-
-- **✨ Unified Embedding Script**: Single `embed.py` replaces 29 versioned scripts
-- **🔧 NumPy 2.x Compatibility**: Updated dependencies for Python 3.14+
-- **🛡️ Comprehensive Error Handling**: Detailed error messages and graceful degradation
-- **📊 Better Logging**: Structured logging with timestamps and progress bars
-- **🚀 Pipeline Script**: End-to-end automation with `pipeline.py`
-
-### Consolidated Scripts
-
-Old scripts archived to `scripts/archive/`:
-- `embed_v21.py` through `embed_v30_lightning.py`
-- `lightning_embed.py` variants
-- Multiple benchmark scripts
-
-### New Features
-
-- **Dependency checking**: Automatic verification of required packages
-- **Exit codes**: Proper exit codes for scripting (0=success, 1=error, 2=partial, 130=interrupted)
-- **Data status check**: `pipeline.py --check` shows what data exists
-- **Verbose mode**: `-v` flag for detailed logging
-
----
-
-## 🚧 Limitations & Future Work
-
-### Current Limitations
-
-- Query encoding requires GPU (8GB VRAM) or cloud service
-- Limited to 5 documents (~3,000 pages)
-- Gemini free tier rate limit (1500 requests/day)
-
-### Roadmap
-
-**Phase 2: Improved Retrieval**
-- Proper ColPali MaxSim scoring (no averaging)
-- Multi-vector index for better precision
-- Re-ranking with cross-encoder
-
-**Phase 3: Scale Up**
-- 100+ documents (NBC, State Master Plans, textbooks)
-- Hybrid search (visual + text)
-- Document chunking for long pages
-
-**Phase 4: Production Ready**
-- Query encoding API (no local GPU needed)
-- Web interface
-- Multi-language support (Hindi, regional languages)
-
----
-
-## 🤝 Contributing
-
-Contributions welcome! Areas of interest:
-- Adding more documents (NBC, State Master Plans)
-- Improving retrieval precision
-- Building web interface
-- Multi-language support
-
----
-
-## 📄 License
-
-This project is licensed under the **Apache License 2.0**.
-
----
-
-## 🙏 Acknowledgments
-
-- **ColQwen** by TomoroAI for visual document retrieval
-- **Gemini** by Google for vision-language generation
-- **Lightning.ai** for GPU compute
-- **ChromaDB** for efficient patch-level vector search
+Planning documents contain tables, diagrams, flowcharts, and color-coded maps. Traditional OCR destroys spatial layout and visual context. This system embeds entire page images as multi-vector representations, preserving all visual information for retrieval.
 
 ---
 
 ## Citation
 
-If you use this work in academic research, please cite:
 ```bibtex
 @software{choudhary2026urbanrag,
   author = {Choudhary, Tanmay},

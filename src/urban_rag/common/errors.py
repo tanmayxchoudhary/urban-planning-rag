@@ -90,3 +90,10 @@ class IndexingError(UrbanRagError):
 
     code = "indexing_error"
     message = "Indexing failed"
+
+
+class RenderError(UrbanRagError):
+    """Raised when PDF rendering fails."""
+
+    code = "render_error"
+    message = "PDF page rendering failed"
