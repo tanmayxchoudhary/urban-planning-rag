@@ -155,7 +155,71 @@ pages_visual_current -> active collection
 
 Do not write a new model into `pages_visual_current` directly. Build a new collection, smoke it, then switch alias.
 
-### 2.3 Page image serving
+### 2.3 Model-independent application boundary
+
+The demo/frontend can be model-independent. The embeddings cannot.
+
+Hard rule: any model change still requires a new derived index, because query vectors and document vectors must live in the same embedding space. The correct abstraction is not "no re-embedding ever"; it is "re-embedding happens behind a versioned retrieval profile and never breaks the product contract."
+
+Create a first-class `RetrievalProfile`:
+
+```yaml
+profile_id: urdpfi_v1__tomoro_colqwen3_4b__202606
+corpus_version: urdpfi_v1_738_pages
+visual:
+  model_id: TomoroAI/tomoro-colqwen3-embed-4b
+  model_revision: <pinned revision>
+  embedding_dim: 320
+  vector_schema: multivector_late_interaction
+  collection: pages_visual__urdpfi_v1__tomoro_colqwen3_4b__202606
+text:
+  model_id: lightonai/GTE-ModernColBERT-v1
+  embedding_dim: 768
+sparse:
+  model_id: bm25_v1
+reranker:
+  model_id: gemini-2.5-flash
+active_aliases:
+  visual: pages_visual_current
+  text: pages_text_current
+```
+
+The application only consumes stable page/citation fields:
+
+```json
+{
+  "page_id": "urdpfi_vol1:p042",
+  "doc_id": "urdpfi_vol1",
+  "doc_title": "URDPFI Guidelines Vol I",
+  "page_number": 42,
+  "image_uri": "/v1/corpus/urdpfi_vol1/pages/42/image",
+  "excerpt": "...",
+  "score": 0.031,
+  "provenance": {
+    "profile_id": "urdpfi_v1__tomoro_colqwen3_4b__202606",
+    "channels": ["visual", "text", "sparse"]
+  }
+}
+```
+
+Model IDs, dimensions, patch counts, and collection names belong in diagnostics and index manifests, not frontend logic.
+
+### 2.4 ViDoRe v3 / pipeline leaderboard stance
+
+Checked on 2026-06-06 from the ViDoRe leaderboard source, MTEB `ViDoRe(v3)` definitions/results, and `illuin-tech/vidore-benchmark` pipeline metrics.
+
+Current standalone ViDoRe v3 leaders are still modern ColQwen-family models:
+
+1. `TomoroAI/tomoro-colqwen3-embed-8b` — mean nDCG@10 around `61.59`.
+2. `athrael-soju/colqwen3.5-4.5B-v3` — around `61.46`.
+3. `OpenSearch-AI/Ops-Colqwen3-4B` — around `61.17`.
+4. `TomoroAI/tomoro-colqwen3-embed-4b` — around `60.20`.
+
+Pipeline leaderboard is not a simple model leaderboard. Top score is an agentic `ColEmbed-VL-8B + Opus 4.5` style pipeline around `69.22`, but with self-reported query latency around `135s/query`, which is wrong for the public demo. More practical entries include Jina text + reranker and NVIDIA ColEmbed/Nemotron variants in the `3–9s/query` range.
+
+Decision: do not blindly chase the top leaderboard row. For v1, pick one visual retriever profile, build a real 738-page index, and evaluate on planning-specific smoke queries. Leaderboard rank is a candidate generator; our own corpus eval is the decision maker. There, fixed the shiny leaderboard rabbit hole before it ate the week.
+
+### 2.5 Page image serving
 
 v1 can serve page images from the API filesystem route or static object storage. The user-facing contract is more important than storage choice:
 
