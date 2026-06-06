@@ -48,6 +48,5 @@ data/*.parquet
 .factory/
 root/
 docs/runbooks/
-PLAN.md
 Dockerfile
 .dockerignore

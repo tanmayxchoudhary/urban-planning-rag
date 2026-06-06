@@ -1,0 +1,108 @@
+{
+  "active_corpus_version": "legacy-visual-738",
+  "generated_by": "scripts/corpus_ledger.py",
+  "summary": {
+    "page_images_total": 743,
+    "legacy_embedding_rows": 738,
+    "legacy_active_rows": 738,
+    "current_docs_dirs": 8,
+    "current_docs_pages_jsonl_total": 322,
+    "orphan_image_prefixes": [
+      "2671af3e4e26f088c42e2294185c1a5cafd56c59e825da427c79d4857bf8dda4"
+    ]
+  },
+  "active_legacy_rows": [
+    {
+      "prefix": "urdpfi_vol1",
+      "page_images": 447,
+      "embedding_rows": 447,
+      "status": "active_legacy"
+    },
+    {
+      "prefix": "urdpfi_vol2",
+      "page_images": 250,
+      "embedding_rows": 250,
+      "status": "active_legacy"
+    },
+    {
+      "prefix": "swm_2016",
+      "page_images": 41,
+      "embedding_rows": 41,
+      "status": "active_legacy"
+    }
+  ],
+  "current_pipeline_rows": [
+    {
+      "doc_hash": "2671af3e4e26f088c42e2294185c1a5cafd56c59e825da427c79d4857bf8dda4",
+      "title": "Test page 1 Test page 1 Test page 1 Test page 1 Test page 1 Test page 1 Test page 1 Test page 1 Test page 1 Te",
+      "pages_jsonl": 5,
+      "chunks": 5,
+      "sections": 5,
+      "page_images": 5,
+      "pdf_mb": 0.0
+    },
+    {
+      "doc_hash": "2b12273b7c2cc7703cec8f983d0b4846fda207bbd8c973c060456eaddf367418",
+      "title": "PM/ IS 383/ 2/ MAY 2020      BUREAU OF INDIAN STANDARDS  Manak Bhawan, 9, Bahadur Shah Zafar Marg,  New Delhi ",
+      "pages_jsonl": 14,
+      "chunks": 36,
+      "sections": 14,
+      "page_images": 0,
+      "pdf_mb": 0.45
+    },
+    {
+      "doc_hash": "3fd6c5caad4a655e344d5896bb46d85213e66b54a5b3c05019bbcfe5008650ed",
+      "title": "DRAFT  REGIONAL PLAN - 2041  NATIONAL CAPITAL REGION NATIONAL CAPITAL REGION PLANNING BOARD MINISTRY OF HOUSIN",
+      "pages_jsonl": 210,
+      "chunks": 1083,
+      "sections": 210,
+      "page_images": 0,
+      "pdf_mb": 13.06
+    },
+    {
+      "doc_hash": "a2ab3ffcc377c1bf35e0e3f0c8aee33166383893907aa9acb5da459c285d4659",
+      "title": "LIST OF SPECIAL PUBLICATIONS OF CED  SI  No.  IS Number  Year  Title  1  SP 6 (Part 4)  1969  ISI Handbook for",
+      "pages_jsonl": 2,
+      "chunks": 5,
+      "sections": 2,
+      "page_images": 0,
+      "pdf_mb": 0.1
+    },
+    {
+      "doc_hash": "a3638fd520689a57a1204f0828a09ece82b503da4113f1e46491fad0e95c8ae0",
+      "title": "GUIDELINES  FOR  SCHEME  OF  URBAN  INFRASTRUCTURE  DEVELOPMENT IN SATELLITE TOWNS / COUNTER MAGNETS OF  MILLI",
+      "pages_jsonl": 18,
+      "chunks": 49,
+      "sections": 18,
+      "page_images": 0,
+      "pdf_mb": 0.08
+    },
+    {
+      "doc_hash": "a8d76b29f6554bed04ecb82286b8d7b3cb3ad1aba163b8533e5279eb3bd362a7",
+      "title": "source.pdf",
+      "pages_jsonl": 3,
+      "chunks": 0,
+      "sections": 3,
+      "page_images": 0,
+      "pdf_mb": 0.02
+    },
+    {
+      "doc_hash": "de4abac8ff1a40b4b6d306e44e067e8aeec04f88b6461cbeaeccb7d1b89564d2",
+      "title": "source.pdf",
+      "pages_jsonl": 1,
+      "chunks": 0,
+      "sections": 1,
+      "page_images": 0,
+      "pdf_mb": 0.0
+    },
+    {
+      "doc_hash": "f35a39b871acc627e148957a5024e641a0d1831d26bec62f4dbbd3ca3a3250df",
+      "title": "Atal Mission for Rejuvenation and  Urban Transformation 2.0  AMRUT 2.0  Making Cities Water Secure  Operationa",
+      "pages_jsonl": 69,
+      "chunks": 188,
+      "sections": 69,
+      "page_images": 0,
+      "pdf_mb": 5.22
+    }
+  ]
+}
