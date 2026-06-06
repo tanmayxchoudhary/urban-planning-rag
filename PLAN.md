@@ -134,15 +134,23 @@ query ───────────────┘
 
 v1 should be **visual-first**.
 
+Active v1 visual retriever is locked to `TomoroAI/tomoro-colqwen3-embed-4b`. This matches the model Tanmay remembers using and is still a competitive ViDoRe v3 candidate. Do not churn to a new leaderboard model until the Tomoro 4B 738-page path is green and evaluated.
+
 Initial retrieval path:
 
-1. Encode query with the same visual model used for page embeddings.
-2. Search Qdrant `pages_visual`.
+1. Encode query with the same Tomoro ColQwen3 4B visual model used for page embeddings.
+2. Search Qdrant `pages_visual_current` alias.
 3. Return top-k page candidates with image URI, document title, page number, and text excerpt if available.
 4. Generate answer with page images + excerpts.
 5. Require inline citations that map back to candidate IDs.
 
-Do not block v1 on text+sparse+VLM rerank if visual-only retrieval is good enough for the URDPFI demo. Hybrid retrieval becomes v1.1 once the narrow demo is already working.
+Hybrid retrieval remains part of the architecture, but not a blocker for first resurrection:
+
+- **v1.0:** visual retrieval + stable citations + page-image lightbox.
+- **v1.1:** multi-query expansion across visual/text/sparse channels, RRF fusion, VLM/Gemini reranking.
+- **v1.2:** experimental secondary profiles such as Gemini Embedding 2, only after project-specific eval proves value.
+
+This is not lowering ambition. It is removing the ADHD trapdoor where every new model announcement resets the whole project.
 
 ### 2.2 Index versioning
 
@@ -217,9 +225,56 @@ Current standalone ViDoRe v3 leaders are still modern ColQwen-family models:
 
 Pipeline leaderboard is not a simple model leaderboard. Top score is an agentic `ColEmbed-VL-8B + Opus 4.5` style pipeline around `69.22`, but with self-reported query latency around `135s/query`, which is wrong for the public demo. More practical entries include Jina text + reranker and NVIDIA ColEmbed/Nemotron variants in the `3–9s/query` range.
 
-Decision: do not blindly chase the top leaderboard row. For v1, pick one visual retriever profile, build a real 738-page index, and evaluate on planning-specific smoke queries. Leaderboard rank is a candidate generator; our own corpus eval is the decision maker. There, fixed the shiny leaderboard rabbit hole before it ate the week.
+Decision: **stick to TomoroAI/tomoro-colqwen3-embed-4b for v1**. It is the remembered project model, likely matches the legacy 320-dim artifact path, and remains close enough to current v3 leaders that the right move is shipping + eval, not churn. Leaderboard rank is a candidate generator; our own corpus eval is the decision maker. There, fixed the shiny leaderboard rabbit hole before it ate the week.
 
-### 2.5 Page image serving
+### 2.5 Gemini Embedding 2 watch item
+
+Google's newer multimodal embedding direction is worth tracking, but not as the v1 primary retriever.
+
+Research note from 2026-06-06:
+
+- `gemini-embedding-2` is described in Gemini API docs/changelog as a unified multimodal embedding model for text, images, video, audio, and documents/PDFs.
+- It is distinct from `gemini-embedding-001`, which is text-only, and from older Vertex `multimodalembedding@001`.
+- It uses a shared embedding space across modalities, which is strategically interesting for future cross-modal search.
+- It still cannot be mixed with ColQwen vectors. If used, it gets its own `RetrievalProfile`, physical collection, eval run, and alias.
+
+Decision: create a future experimental profile only after Tomoro 4B v1 works. Candidate use cases: managed fallback retrieval, cross-modal corpus expansion, or comparing dense universal embeddings against ColQwen late-interaction visual retrieval on our own planning queries.
+
+### 2.6 Page rendering and DPI policy
+
+The render pipeline must preserve the old visual/text page filter Tanmay remembers.
+
+Add a deterministic page modality classifier before rendering/indexing:
+
+```text
+page_modality ∈ {text_only, visual_heavy, mixed}
+```
+
+Classifier signals:
+
+- text density / OCR-token count
+- image area ratio
+- table/figure/diagram/layout block count
+- page aspect/whitespace/line density
+- fallback manual override in page manifest for weird planning pages
+
+Rendering policy:
+
+```yaml
+text_only:
+  render_dpi: 150
+  index_channels: [visual, text, sparse]
+visual_heavy:
+  render_dpi: 250
+  index_channels: [visual]
+mixed:
+  render_dpi: 220
+  index_channels: [visual, text, sparse]
+```
+
+The DPI decision affects embeddings, so it belongs in the `RetrievalProfile` / index manifest. Changing DPI means a new derived index, same as changing the model.
+
+### 2.7 Page image serving
 
 v1 can serve page images from the API filesystem route or static object storage. The user-facing contract is more important than storage choice:
 
