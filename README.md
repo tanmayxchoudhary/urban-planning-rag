@@ -2,6 +2,8 @@
 
 **Visual RAG system for Indian urban planning regulations**
 
+> **Phase 0 Status (2026-06-19):** The April hybrid architecture described below (ColQwen2.5 + GTE + BM25 + Qdrant + RRF + Gemini rerank) is **not** the current live v1 path. It is stale and not used for v1. The real v1 runtime is the Tomoro Modal in-memory MaxSim retriever. See `docs/tomoro_v1_runtime.md` for the honest current state. Do not overclaim readiness.
+
 A production-grade multimodal retrieval system that indexes planning documents (NBC, URDPFI, SWM Rules) as page images, embeds them with ColQwen2.5 visual encoders, and answers questions via Gemini 2.5 Flash with precise page citations.
 
 ---
@@ -23,16 +25,18 @@ The system:
 
 ## Architecture
 
-### Embedding
+> **Current v1 path:** See `docs/tomoro_v1_runtime.md`. The detailed hybrid below is the April prototype (not live for v1). v1 is Tomoro 4B visual MaxSim (in-memory on Modal) over the 738-row legacy tensor. No Qdrant/hybrid for v1.
+
+### Embedding (April prototype — not v1)
 - **Visual**: `vidore/colqwen2.5-v0.2` — 128-dim multi-vector per patch (ColPali-style late interaction)
 - **Text**: `lightonai/GTE-ModernColBERT-v1` — 768-dim multi-vector per token (ModernBERT late interaction)
 
-### Vector DB
+### Vector DB (April prototype — not v1)
 - **Qdrant** with two collections:
   - `pages_visual` — ColQwen2.5 multi-vector with MAX_SIM comparator + INT8 scalar quantization
   - `pages_text` — GTE-ModernColBERT multi-vector (text + BM25 sparse)
 
-### Retrieval Pipeline
+### Retrieval Pipeline (April prototype — not v1)
 ```
 Query → 3-channel parallel search (visual/text/sparse BM25)
       → RRF k=60 fusion (top-20 per channel → top-20 fused)
@@ -45,30 +49,30 @@ Query → 3-channel parallel search (visual/text/sparse BM25)
 - **Fusion**: RRF k=60 across all three channels
 - **Rerank**: Gemini 2.5 Flash cross-encoder scores page images → top 5
 
-### Generation
+### Generation (April prototype — not v1)
 - **Streaming Gemini 2.5 Flash** client with SSE events
 - Confidence levels per claim, inline `[k]` citation markers
 - Grounded in retrieved page images sent alongside the query
 
-### API
+### API (April prototype — not v1)
 - **FastAPI** gateway on port 3100
 - SSE streaming for query responses
 - `/v1/query` — streaming query endpoint
 - `/v1/healthz` — health check
 - `/metrics` — Prometheus metrics
 
-### Web
+### Web (April prototype — not v1)
 - **Next.js 14 App Router** (`web/` directory)
 - Streaming query via Server-Sent Events
 - Citation lightbox (click `[k]` to view the source page)
 - Thumbs up/down feedback buttons
 
-### Observability
+### Observability (April prototype — not v1)
 - **Langfuse** tracing (per-query spans, OTel-compatible)
 - **Prometheus** metrics (`qdrant_latency_seconds`, `gemini_cost_usd_total`, `faithfulness_p50`)
 - **Grafana** dashboards (see `infra/grafana/`)
 
-### Evaluation
+### Evaluation (April prototype — not v1)
 - `eval/smoke.jsonl` — 25 hand-curated questions (CI gate on every PR)
 - `eval/regression.jsonl` — 106 questions including adversarial probes
 - **RAGAS** metrics: faithfulness, answer_relevance, context_precision, context_recall, answer_correctness
@@ -82,7 +86,7 @@ Query → 3-channel parallel search (visual/text/sparse BM25)
 |------|-------|
 | Documents indexed | 8 |
 | Total pages | 743 PNG renders |
-| Corpus ready to scale | Yes — 200+ documents queued once source URLs are resolved |
+| Corpus ready to scale | No — v1 uses legacy 738-row Tomoro tensor (Phase 0 recovery); April pipeline not ready for visual retrieval |
 
 ---
 

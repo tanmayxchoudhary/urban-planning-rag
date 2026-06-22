@@ -1,568 +1,344 @@
-# Urban RAG v1 Plan — Public Demo First
+# Urban RAG v1 — Final Execution Plan
 
-> **For Hermes / Niney:** SHIP_PLAN.md is the long-range launch vision. This PLAN.md is the current architecture + execution source of truth for getting a narrow public demo working first.
-
-**Goal:** Ship a beautiful, reliable public demo over the existing URDPFI corpus before expanding documents.
-
-**Primary v1 promise:** A user asks an Indian urban planning question, gets a grounded answer with clickable citations, and each citation opens the exact source page image.
-
-**Current v1 corpus:** Existing URDPFI page-image corpus only. No expansion until the end-to-end path is green.
+> **Purpose:** This is the execution-grade source of truth for getting Urban RAG from its current broken repo state to a real green demo.
+> **Status:** Finalized by Niney + Claudey on 2026-06-19 from live repo inspection, log receipts, and adversarial review.
+> **Boundary:** This plan is for **v1 green demo only**. The broader ship vision lives separately and must not pollute v1 execution.
 
 ---
 
-## 1. Decisions Locked
+## 0. TL;DR
 
-### 1.1 Product priority
-
-Public demo first.
-
-We are not optimizing v1 around 50k pages, IndianPlanningBench, full launch marketing, or all-domain regulatory coverage. Those matter later. First, prove the demo loop:
-
-```text
-question → retrieval → grounded answer → citation chips → page image lightbox
-```
-
-### 1.2 Corpus scope
-
-Use the existing URDPFI corpus.
-
-Observed local state during recon:
-
-- `data/page_images/`: 743 PNG renders.
-- `data/embeddings/embeddings.pt`: 572.51 MB legacy embedding artifact; loaded as `torch.Tensor` with shape `[738, 1271, 320]`, dtype `bfloat16`.
-- `data/embeddings/metadata.json`: 738 legacy per-page metadata rows: 447 `urdpfi_vol1.pdf`, 250 `urdpfi_vol2.pdf`, 41 `swm_2016.pdf`.
-- `urban-rag corpus stats`: 11 documents / 325 pages in the current parsed manifest path.
-- `data/docs/`: 8 document-hash directories with `source.pdf`, `pages.jsonl`, `chunks.jsonl`, `sections.jsonl`.
-
-This means the project has two partially divergent corpus states:
-
-1. **Legacy visual corpus** — 738 embedded rows (`[738, 1271, 320]`) and 738 matching page images under `urdpfi_vol1`, `urdpfi_vol2`, `swm_2016`, plus 5 extra hash-prefixed page images.
-2. **Current April pipeline corpus** — parsed manifest reports 325 pages / `data/docs` currently has 322 `pages.jsonl` rows.
-
-Important: the legacy embedding dimension is `320`, while current `src/urban_rag/embed/colqwen.py` declares ColQwen2.5 output as `128`. Those artifacts are not interchangeable. Either index/search the legacy artifact with its original model contract, or re-embed all active pages with the current pinned model.
-
-### 1.3 Model / embedding contract
-
-The visual model is part of the index identity.
-
-If the visual model changes, all visual embeddings must be recomputed. The retrieval query encoder and indexed page encoder must be the same compatible model family. Do not mix 8B/4B/ColQwen variants inside one collection.
-
-Every index version must record:
-
-- `corpus_version`
-- `embed_model_id`
-- `embed_model_revision` if available
-- `embedding_dim`
-- `index_created_at`
-- `page_count`
-- `source_manifest_hash`
-
-### 1.4 GPU strategy
-
-Use Modal serverless GPUs if GPU is needed.
-
-Lightning Studio history is useful context, but new GPU work should target Modal unless there is a specific reason not to. Modal should host the visual embedding service and batch re-index job, not the whole web/API stack.
-
-### 1.5 Hybrid codebase strategy
-
-Keep proven modules from current HEAD. Rewrite or simplify confusing/fragile parts.
-
-Keep candidates:
-
-- `src/urban_rag/ingest/render.py` — tested render path.
-- `src/urban_rag/ingest/load.py`, `parse.py`, `chunk.py`, `sections.py` — keep where tests pass, but audit against real URDPFI data.
-- `src/urban_rag/api/main.py` — API shape is useful, but must be wired to real retrieval.
-- `web/` — Next.js build passes; citation UI exists.
-- `src/urban_rag/index/qdrant_client.py` — Qdrant schema direction is good.
-- `src/urban_rag/retrieve/fusion.py` and typed common models — useful.
-
-Rewrite/repair candidates:
-
-- Eval runner currently uses synthetic perfect candidates. It is not a real smoke eval.
-- Corpus state is split between legacy artifacts and current manifest.
-- Qdrant on localhost currently has no `pages_visual` / `pages_text` collections.
-- Services manifest still references Lightning commands; Modal path needs to become first-class.
-- Root `PLAN.md` was ignored by `.gitignore`; this must stop. Architecture docs are product artifacts, not disposable agent scratch.
+- The **April hybrid in the repo is not the path**. It is stale, broken, and not to be debugged for v1.
+- The **Tomoro 4B visual retriever is the right v1 direction**, but its **source code is not in the repo** today. We only have run logs and a local verifier script.
+- The **738-row legacy tensor is the v1 corpus**: 447 `urdpfi_vol1` + 250 `urdpfi_vol2` + 41 `swm_2016`. The extra 5 PNGs are test pages and are **not** part of the embedded corpus.
+- The first real task is **not UI work**. It is **Phase 0: reconstruct + re-verify the retriever from logs, then commit the missing source and receipts**.
+- v1 runtime is locked to **Modal in-memory MaxSim** over the existing tensor. **No Qdrant. No hybrid. No 8B churn.**
+- v1 is judged by one thing: **does it answer real in-corpus questions with grounded citations and refuse out-of-corpus bullshit cleanly?**
+- The build order is locked: **recover asset → adversarial eval → generation → API → web → public**.
+- Nothing gets marked "verified" without a live receipt in the repo.
 
 ---
 
-## 2. Target v1 Architecture
+## 1. Ground truth
 
-```text
-          ┌─────────────────────┐
-          │ Existing URDPFI PDFs │
-          └──────────┬──────────┘
-                     │
-                     ▼
-          ┌─────────────────────┐
-          │ Corpus Ledger        │
-          │ docs + pages + imgs  │
-          └──────────┬──────────┘
-                     │ page images
-                     ▼
-          ┌─────────────────────┐
-          │ Modal GPU Embed Job  │
-          │ visual model pinned  │
-          └──────────┬──────────┘
-                     │ page vectors + metadata
-                     ▼
-          ┌─────────────────────┐
-          │ Qdrant pages_visual │
-          │ versioned alias     │
-          └──────────┬──────────┘
-                     │
-query ───────────────┘
-  │
-  ▼
-┌─────────────────────┐
-│ API /v1/ask          │
-│ query embed → search │
-└──────────┬──────────┘
-           ▼
-┌─────────────────────┐
-│ Gemini grounded gen  │
-│ answer + citations   │
-└──────────┬──────────┘
-           ▼
-┌─────────────────────┐
-│ Next.js public demo  │
-│ citation lightbox    │
-└─────────────────────┘
-```
+### 1.1 Reality table
 
-### 2.1 Retrieval shape for v1
+| Area | State | Confidence | Receipt | What it means |
+|---|---|---|---|---|
+| README architecture | Still describes April hybrid (`ColQwen2.5 + GTE + BM25 + Qdrant + RRF + Gemini`) | **verified-live** | `README.md` | README is stale and misleading. |
+| Current repo runtime path | April hybrid code is what's committed under `src/urban_rag/` | **verified-live** | `src/urban_rag/`, `README.md`, `common/settings.py` | Current repo path is not the v1 path. |
+| Tomoro retriever source | `TomoroSearch`, `process_texts`, `score_multi_vector`, `modal_search_service.py`, `provenance_maxsim.py` are **absent from the repo** | **verified-live** | repo search + `git status` + log mount paths | Phase 0 is a reconstruction from logs, not a simple wiring task. |
+| Modal verifier | `scripts/modal_verify_g1.py` exists locally but is **untracked** | **verified-live** | `git status` | Stop claiming it is committed until it actually is. |
+| One real search smoke | Road-width query returned relevant pages in **1.37s** | **log-only** | `launch/artifacts/g3_modal_search_test2.log` | Encouraging but not proof of retrieval quality. |
+| Score stability | Rank 1 and rank 2 tied at **13.6875** on the smoke query | **log-only** | `g3_modal_search_test2.log` | Gate-A margin may be weak or unusable; must be calibrated, not assumed. |
+| Provenance smoke | 5/5 known-query hits on `embeddings_tomoro320_full.pt` | **log-only** | `launch/artifacts/provenance_tomoro320_full.log` | Good provenance smoke, **not** a real eval. |
+| Live volume listing | Stale listing shows only `metadata.json` and `embeddings.pt` | **stale-log** | `launch/artifacts/modal_volume_ls.log` | Fresh volume inventory is required in Phase 0. |
+| Legacy corpus definition | 738 embedded rows = 447 `urdpfi_vol1` + 250 `urdpfi_vol2` + 41 `swm_2016`; 5 extra PNGs are tests | **verified-live** | `docs/corpus_ledger.md` | v1 corpus must be explicitly defined as these 738 rows. |
+| Local data state | Current April ingest outputs are not ready for visual retrieval; many blank `image_uri` values | **verified-live** | `docs/corpus_ledger.md`, `data/docs/*` | Do not build v1 on current ingest outputs. |
+| CI/CD reality | `.github/` does not exist at current HEAD | **verified-live** | repo search | Ignore old claims of working CI/CD until reintroduced later. |
 
-v1 should be **visual-first**.
+### 1.2 v1 corpus definition
 
-Active v1 visual retriever is locked to `TomoroAI/tomoro-colqwen3-embed-4b`. This matches the model Tanmay remembers using and is still a competitive ViDoRe v3 candidate. Do not churn to a new leaderboard model until the Tomoro 4B 738-page path is green and evaluated.
+For v1, the active corpus is locked to the **existing 738-row legacy visual tensor**:
 
-Initial retrieval path:
+- `urdpfi_vol1`: 447 pages
+- `urdpfi_vol2`: 250 pages
+- `swm_2016`: 41 pages
 
-1. Encode query with the same Tomoro ColQwen3 4B visual model used for page embeddings.
-2. Search Qdrant `pages_visual_current` alias.
-3. Return top-k page candidates with image URI, document title, page number, and text excerpt if available.
-4. Generate answer with page images + excerpts.
-5. Require inline citations that map back to candidate IDs.
+Important:
+- This is **not** "738 URDPFI pages" in a strict sense.
+- It is **697 URDPFI pages + 41 SWM pages**.
+- `743 PNGs` includes **5 test pages** that must be excluded from the citation-serving path.
 
-Hybrid retrieval remains part of the architecture, but not a blocker for first resurrection:
+### 1.3 Current thesis
 
-- **v1.0:** visual retrieval + stable citations + page-image lightbox.
-- **v1.1:** multi-query expansion across visual/text/sparse channels, RRF fusion, VLM/Gemini reranking.
-- **v1.2:** experimental secondary profiles such as Gemini Embedding 2, only after project-specific eval proves value.
+The honest thesis is:
 
-This is not lowering ambition. It is removing the ADHD trapdoor where every new model announcement resets the whole project.
+1. The repo's committed runtime is the wrong system for v1.
+2. The Tomoro direction is correct.
+3. The tensor likely survives and one smoke query looks promising.
+4. The retriever **must be reconstructed from logs and then re-verified live** before anything else.
+5. Retrieval quality is **not yet measured**; it must earn trust through the adversarial eval, not through hand-picked log receipts.
 
-### 2.2 Index versioning
+---
 
-Use physical collection names and stable aliases:
+## 2. Locked v1 decisions
 
-```text
-pages_visual__urdpfi_v1__<model_slug>__<yyyymmdd>
-pages_visual_current -> active collection
-```
+| Decision | Locked choice | Reason |
+|---|---|---|
+| Retriever model | `TomoroAI/tomoro-colqwen3-embed-4b` @ `bf790bd8` | Correct direction, existing tensor/log receipts, no model churn before green. |
+| Query API | `process_texts` → model forward → `score_multi_vector` | Replaces the stale `process_queries` path. |
+| Vector store | **None for v1** — Modal in-memory MaxSim over the 738-row tensor | Small corpus; avoids Qdrant complexity and already-failed infra. |
+| Serving warmth | **Scale-to-zero by default**; warm only during demo windows | No 24/7 idle L4 burn for a demo. |
+| Gateway | FastAPI on Hermes/VPS owns SSE, generation, citations, image serving, auth, rate-limit, noindex | Keeps public contract off Modal and centralizes cost/risk controls. |
+| Page-image serving | One-time `modal volume get` to VPS; serve static/cacheable files locally | Avoids per-click Modal round-trips. |
+| Generation | Gemini 2.5 Flash via official `google-genai` SDK over **downscaled page images** | Visual RAG must send real images, but with sane payload control. |
+| Refusal | Two-gate system: **Gate A** retrieval-confidence, **Gate B** grounded structured evidence | Prompt-only refusal is fake safety. |
+| Legacy hybrid | Archive as `legacy_hybrid`; fail closed unless explicitly selected | Preserve history without letting it contaminate runtime. |
+| Scope boundary | No Qdrant, no hybrid retrieval, no 8B, no corpus expansion in v1 | Prevent scope drift and fake progress. |
+| Sacred invariant | `tensor row ↔ page_id ↔ PNG filename ↔ cited page number` must remain 1:1 | Break this and the whole product becomes a liar. |
 
-Do not write a new model into `pages_visual_current` directly. Build a new collection, smoke it, then switch alias.
-
-### 2.3 Model-independent application boundary
-
-The demo/frontend can be model-independent. The embeddings cannot.
-
-Hard rule: any model change still requires a new derived index, because query vectors and document vectors must live in the same embedding space. The correct abstraction is not "no re-embedding ever"; it is "re-embedding happens behind a versioned retrieval profile and never breaks the product contract."
-
-Create a first-class `RetrievalProfile`:
+### 2.1 Retrieval profile contract
 
 ```yaml
 profile_id: urdpfi_v1__tomoro_colqwen3_4b__202606
-corpus_version: urdpfi_v1_738_pages
+corpus_version: legacy_visual_738_rows
+runtime: modal_in_memory_maxsim
 visual:
   model_id: TomoroAI/tomoro-colqwen3-embed-4b
-  model_revision: <pinned revision>
+  model_revision: bf790bd8780b098b86453444632a184bb770be1a
   embedding_dim: 320
-  vector_schema: multivector_late_interaction
-  collection: pages_visual__urdpfi_v1__tomoro_colqwen3_4b__202606
-text:
-  model_id: lightonai/GTE-ModernColBERT-v1
-  embedding_dim: 768
-sparse:
-  model_id: bm25_v1
-reranker:
+  query_api: process_texts + score_multi_vector
+  tensor: embeddings_tomoro320_full.pt   # confirm canon in Phase 0
+  page_count: 738
+  test_pngs_excluded: 5
+retrieval_gate:
+  min_top1_score: <calibrate>
+  min_top1_minus_top2_margin: <calibrate or disable if ties dominate>
+  fallback_if_margin_unusable: domain_classifier + absolute score + topk dispersion
+generator:
   model_id: gemini-2.5-flash
-active_aliases:
-  visual: pages_visual_current
-  text: pages_text_current
-```
-
-The application only consumes stable page/citation fields:
-
-```json
-{
-  "page_id": "urdpfi_vol1:p042",
-  "doc_id": "urdpfi_vol1",
-  "doc_title": "URDPFI Guidelines Vol I",
-  "page_number": 42,
-  "image_uri": "/v1/corpus/urdpfi_vol1/pages/42/image",
-  "excerpt": "...",
-  "score": 0.031,
-  "provenance": {
-    "profile_id": "urdpfi_v1__tomoro_colqwen3_4b__202606",
-    "channels": ["visual", "text", "sparse"]
-  }
-}
-```
-
-Model IDs, dimensions, patch counts, and collection names belong in diagnostics and index manifests, not frontend logic.
-
-### 2.4 ViDoRe v3 / pipeline leaderboard stance
-
-Checked on 2026-06-06 from the ViDoRe leaderboard source, MTEB `ViDoRe(v3)` definitions/results, and `illuin-tech/vidore-benchmark` pipeline metrics.
-
-Current standalone ViDoRe v3 leaders are still modern ColQwen-family models:
-
-1. `TomoroAI/tomoro-colqwen3-embed-8b` — mean nDCG@10 around `61.59`.
-2. `athrael-soju/colqwen3.5-4.5B-v3` — around `61.46`.
-3. `OpenSearch-AI/Ops-Colqwen3-4B` — around `61.17`.
-4. `TomoroAI/tomoro-colqwen3-embed-4b` — around `60.20`.
-
-Pipeline leaderboard is not a simple model leaderboard. Top score is an agentic `ColEmbed-VL-8B + Opus 4.5` style pipeline around `69.22`, but with self-reported query latency around `135s/query`, which is wrong for the public demo. More practical entries include Jina text + reranker and NVIDIA ColEmbed/Nemotron variants in the `3–9s/query` range.
-
-Decision: **stick to TomoroAI/tomoro-colqwen3-embed-4b for v1**. It is the remembered project model, likely matches the legacy 320-dim artifact path, and remains close enough to current v3 leaders that the right move is shipping + eval, not churn. Leaderboard rank is a candidate generator; our own corpus eval is the decision maker. There, fixed the shiny leaderboard rabbit hole before it ate the week.
-
-### 2.5 Gemini Embedding 2 watch item
-
-Google's newer multimodal embedding direction is worth tracking, but not as the v1 primary retriever.
-
-Research note from 2026-06-06:
-
-- `gemini-embedding-2` is described in Gemini API docs/changelog as a unified multimodal embedding model for text, images, video, audio, and documents/PDFs.
-- It is distinct from `gemini-embedding-001`, which is text-only, and from older Vertex `multimodalembedding@001`.
-- It uses a shared embedding space across modalities, which is strategically interesting for future cross-modal search.
-- It still cannot be mixed with ColQwen vectors. If used, it gets its own `RetrievalProfile`, physical collection, eval run, and alias.
-
-Decision: create a future experimental profile only after Tomoro 4B v1 works. Candidate use cases: managed fallback retrieval, cross-modal corpus expansion, or comparing dense universal embeddings against ColQwen late-interaction visual retrieval on our own planning queries.
-
-### 2.6 Page rendering and DPI policy
-
-The render pipeline must preserve the old visual/text page filter Tanmay remembers.
-
-Add a deterministic page modality classifier before rendering/indexing:
-
-```text
-page_modality ∈ {text_only, visual_heavy, mixed}
-```
-
-Classifier signals:
-
-- text density / OCR-token count
-- image area ratio
-- table/figure/diagram/layout block count
-- page aspect/whitespace/line density
-- fallback manual override in page manifest for weird planning pages
-
-Rendering policy:
-
-```yaml
-text_only:
-  render_dpi: 150
-  index_channels: [visual, text, sparse]
-visual_heavy:
-  render_dpi: 250
-  index_channels: [visual]
-mixed:
-  render_dpi: 220
-  index_channels: [visual, text, sparse]
-```
-
-The DPI decision affects embeddings, so it belongs in the `RetrievalProfile` / index manifest. Changing DPI means a new derived index, same as changing the model.
-
-### 2.7 Page image serving
-
-v1 can serve page images from the API filesystem route or static object storage. The user-facing contract is more important than storage choice:
-
-```json
-{
-  "page_id": "urdpfi-vol1:p042",
-  "doc_title": "URDPFI Guidelines Vol I",
-  "page_number": 42,
-  "image_url": "/v1/pages/urdpfi-vol1/p042.png",
-  "excerpt": "..."
-}
-```
-
-Citation chips in the web UI must resolve to this image URL without guessing local paths.
-
----
-
-## 3. Current Verification Baseline
-
-Run on 2026-06-06 in `/root/projects/urban-planning-rag`.
-
-### Passing
-
-- Imports pass:
-  - `urban_rag.common.settings`
-  - `urban_rag.api.main`
-  - `urban_rag.retrieve.orchestrator`
-  - `urban_rag.embed.serve`
-- Typecheck passes:
-  - `uv run pyright src/urban_rag/` → `0 errors, 0 warnings, 0 informations`
-- Focused backend test slice passes:
-  - `uv run pytest tests/unit/urban_rag/common tests/unit/urban_rag/ingest tests/unit/urban_rag/retrieve/test_fusion.py tests/unit/urban_rag/eval/metrics/test_retrieval.py -q --maxfail=10`
-  - Result: `290 passed, 10 warnings in 71.26s`
-- Web production build passes after installing deps:
-  - `cd web && npm ci && npm run build`
-  - Result: Next.js build successful; one `<img>` performance warning.
-- Synthetic smoke eval passes:
-  - `uv run python -m urban_rag.eval run --dataset smoke --tag live-recon-20260606-140131`
-  - Result: `25 passed / 0 failed`
-
-### Not passing / not trustworthy yet
-
-- Full unit run aborted because the disk hit 100% during pytest cache write. This is an environment issue first, not yet a proven test failure.
-- `ruff check src/urban_rag tests/unit` fails mostly on test hygiene: unused imports, import ordering, long lines, blind `pytest.raises(Exception)`, and Bandit-style temp path warnings in tests.
-- Web install reports `6 vulnerabilities (2 moderate, 4 high)` from npm audit.
-- Synthetic eval is not evidence of retrieval quality. It creates perfect fake candidates from expected pages.
-- Local Qdrant container is running for other infrastructure, but collections are only memory-related; no `pages_visual` or `pages_text` collections are present.
-
----
-
-## 4. Phase Plan
-
-## Phase 0 — Stabilize Ground Truth
-
-**Goal:** Make the repo tell one truth about corpus, model, and index state.
-
-### Task 0.1 — Stop ignoring PLAN.md
-
-- Modify `.gitignore` to stop ignoring `PLAN.md`.
-- Commit this file as the architecture source of truth.
-
-Verification:
-
-```bash
-git check-ignore PLAN.md || true
-# Expected: no output
-```
-
-### Task 0.2 — Create corpus ledger
-
-Create `data/corpus_ledger.json` or `docs/corpus_ledger.md` that reconciles:
-
-- `data/page_images/*.png`
-- `data/docs/*/pages.jsonl`
-- `data/manifest.parquet`
-- `data/embeddings/metadata.json`
-- source PDFs
-
-Output table:
-
-| doc_id | title | source_pdf | pages_jsonl | page_images | embedding_rows | status |
-|---|---|---|---:|---:|---:|---|
-
-Gate:
-
-- We can explain exactly why page images are 743 while `corpus stats` says 325.
-- Every page image either maps to a ledger page or is marked legacy/orphan.
-
-### Task 0.3 — Decide active corpus version
-
-Create a version label:
-
-```text
-urdpfi-v1-existing
-```
-
-Gate:
-
-- Active page count is explicit.
-- Active source PDFs are explicit.
-- Orphan/legacy files are not deleted yet, just labelled.
-
----
-
-## Phase 1 — Real Visual Index
-
-**Goal:** Build a queryable visual index for the existing URDPFI corpus.
-
-### Task 1.1 — Modal embed service skeleton
-
-Create a Modal app that can:
-
-- Load pinned visual model.
-- Embed a batch of page image paths or uploaded image bytes.
-- Embed a query with the same model.
-- Return model metadata with every response.
-
-Do not support multiple models dynamically in v1. One pinned model per deployed service.
-
-### Task 1.2 — Re-index active corpus
-
-Batch embed all active page images and write to a new Qdrant collection:
-
-```text
-pages_visual__urdpfi_v1_existing__<model_slug>__<date>
-```
-
-Gate:
-
-- Qdrant count equals active ledger page count.
-- Random 10 payloads have valid `page_id`, `doc_title`, `page_number`, `image_url`.
-- Model metadata saved beside index manifest.
-
-### Task 1.3 — Query smoke
-
-Write a real retrieval smoke script:
-
-```bash
-uv run python scripts/smoke_visual_retrieval.py
-```
-
-It should run 5 URDPFI-only queries and print top-5 pages with page IDs and image paths.
-
-Gate:
-
-- At least 4/5 queries retrieve plausible pages by human inspection.
-- No Gemini generation involved yet.
-
----
-
-## Phase 2 — API End-to-End
-
-**Goal:** Local API returns real answer + citations over real retrieval.
-
-### Task 2.1 — Wire `/v1/ask` to real visual retrieval
-
-For v1, the API may bypass text/sparse/rerank if those are not indexed.
-
-Add a config flag:
-
-```text
-RETRIEVAL_MODE=visual_only|hybrid
-```
-
-Default v1: `visual_only`.
-
-Gate:
-
-```bash
-curl -N http://localhost:3100/v1/ask/<id>/stream
-```
-
-Streams retrieval started → candidates → generation tokens → completed.
-
-### Task 2.2 — Citation contract
-
-Every generated citation must map to a returned candidate.
-
-Gate:
-
-- No citation chip can point to a missing page.
-- If Gemini cites outside retrieved candidates, the API rejects/repairs the citation before returning.
-
-### Task 2.3 — Page image route
-
-Add `/v1/pages/{page_id}` or equivalent route.
-
-Gate:
-
-```bash
-curl -I http://localhost:3100/v1/pages/<known_page_id>
-# Expected: 200 image/png
+  input: downscaled_page_image_bytes
+  image_budget:
+    default_k: 3
+    max_k: 5
+    long_edge_px: 1024
+    format: webp
+  structured_output:
+    - answer
+    - cited_pages
+    - visible_evidence_per_page
+    - confidence
+    - refusal_reason
 ```
 
 ---
 
-## Phase 3 — Web Demo
+## 3. Phase plan with gates
 
-**Goal:** Public-demo UI feels real, not like a backend test harness wearing lipstick.
+## Phase 0 — Recover and re-verify the asset
 
-### Task 3.1 — Landing query flow
+**Goal:** turn the current log-only Tomoro path into committed source + fresh receipts.
 
-The root page should support:
+### Tasks
+1. Reconstruct and commit:
+   - `scripts/modal_search_service.py`
+   - `scripts/provenance_maxsim.py`
+   - `scripts/modal_verify_g1.py`
+2. Run a **fresh** recursive volume inventory and save the receipt under `launch/artifacts/`.
+3. Confirm which tensor is canonical for v1:
+   - `embeddings_tomoro320_full.pt`
+   - `embeddings.pt`
+   - metadata filename(s)
+   - shape / sha / row count
+4. Reproduce the road-width smoke query from committed code.
+5. Assert the sacred mapping:
+   - tensor row ↔ metadata row ↔ page_id ↔ PNG filename
+6. Add `docs/tomoro_v1_runtime.md` describing the real v1 architecture.
+7. Update `README.md` so it stops pretending the April hybrid is current.
 
-- Example URDPFI queries.
-- Streaming answer.
-- Citation chips.
-- Clear error states.
+### Gate
+Phase 0 is complete only when all of these are true:
+- retriever source exists **in git**
+- fresh volume inventory exists **in repo receipts**
+- canonical tensor is named explicitly in this plan and in runtime docs
+- one reconstructed search run reproduces sensible results
+- page-id mapping assertion passes
 
-Gate:
-
-- `npm run build` passes.
-- Manual browser query works locally.
-
-### Task 3.2 — Citation lightbox polish
-
-Keep existing `CitationChip.tsx` and `CitationLightbox.tsx` if they work. Polish only what breaks the demo.
-
-Gate:
-
-- Click citation → page image opens.
-- Mobile viewport works.
-- Back/close keyboard path works.
-
-### Task 3.3 — Demo deployment
-
-Deploy API + web behind a private/noindex URL first.
-
-Public URL target remains:
-
-```text
-urban-rag.tanmaychoudhary.com
-```
-
-Public exposure/DNS remains a RED-line action: recommend and wait for explicit approval before changing DNS/firewall.
+### If Phase 0 fails
+- If the tensor is missing or corrupted: stop calling the asset healthy; the plan changes to controlled re-embed.
+- If the code cannot be reconstructed cleanly from logs: reduce to a 5-page or 20-page canary and prove the API path before touching web.
+- If page-id mapping is inconsistent: stop everything until fixed; citations are the product.
 
 ---
 
-## Phase 4 — Real Smoke Eval
+## Phase 1 — Adversarial eval harness and Gate-A calibration
 
-**Goal:** Replace fake green checks with checks that can catch broken retrieval.
+**Goal:** measure retrieval honestly before generation or UI polish.
 
-### Task 4.1 — URDPFI-only smoke set
+### Tasks
+1. Build `eval/urdpfi_v1_matrix.jsonl` with at least these buckets:
+   - 20 direct answerable queries
+   - 20 paraphrased answerable queries
+   - 10 table / figure / layout queries
+   - 10 near-miss in-domain queries
+   - 20 out-of-corpus queries
+   - 10 citation-trap queries
+   - 10 ambiguity queries
+2. Define the labeling method in the eval README:
+   - who authored each question
+   - how gold pages were chosen
+   - how oracle contamination was prevented
+3. Log these metrics:
+   - recall@1 / @3 / @5
+   - refusal precision / recall
+   - citation-page correctness
+   - top-1 / top-2 / top-5 score distributions
+   - p50 / p95 latency
+   - cold vs warm latency
+4. Calibrate Gate A from real negatives.
+5. Decide whether top-score margin is usable. If ties dominate, switch Gate A to absolute score + domain classifier + dispersion features.
 
-Create `eval/urdpfi_smoke.jsonl` with 10-15 questions that are actually answerable from the active corpus.
+### Gate
+Phase 1 is complete only when:
+- answerable recall@5 ≥ 80%
+- out-of-corpus refusal ≥ 90%
+- citation-page correctness ≥ 85%
+- Gate A has a justified signal, not a decorative threshold
 
-Each entry needs:
-
-- question
-- expected page(s) or doc section(s)
-- required answer keywords
-- rubric
-
-### Task 4.2 — Live retrieval eval
-
-Modify eval runner or add a new runner so it calls real retrieval instead of `_synthetic_candidates_for_entry`.
-
-Gate:
-
-```bash
-uv run python -m urban_rag.eval run-live --dataset urdpfi_smoke
-```
-
-Minimum v1 gate:
-
-- recall@5 ≥ 0.70 while tuning.
-- recall@5 ≥ 0.85 before public demo.
+### If Phase 1 fails
+- If recall is weak: investigate tensor, query preprocessing, page order, or whether 738-row corpus is too noisy.
+- If refusal is weak: improve Gate A before asking Gemini to save us.
+- If score ties make margin useless: document it and change the design instead of pretending otherwise.
 
 ---
 
-## 5. Kill Criteria / Anti-Procrastination Rules
+## Phase 2 — Generation and Gate-B grounding
 
-- Do not ingest new documents until a real URDPFI query returns citations + page images locally.
-- Do not switch visual models without creating a new index version.
-- Do not build a broader benchmark before live retrieval works.
-- Do not optimize text/sparse/hybrid retrieval until visual-only has a measured baseline.
-- Do not deploy publicly until page-image citations are reliable.
+**Goal:** add answer generation without turning retrieval into a hallucination vending machine.
+
+### Tasks
+1. Wire Gemini 2.5 Flash via `google-genai` SDK.
+2. Send real page images with adaptive budget:
+   - default top-3
+   - expand to top-5 only when justified
+   - downscale to ~1024px long edge
+   - use webp / sane quality settings
+3. Enforce structured output:
+   - `answer`
+   - `cited_pages`
+   - `visible_evidence_per_page`
+   - `confidence`
+   - `refusal_reason`
+4. Reject or downgrade answers when evidence is absent or unsupported.
+5. Re-run the full eval matrix end-to-end.
+
+### Gate
+Phase 2 is complete only when:
+- Phase 1 thresholds still hold with generation on
+- zero fabricated numeric claims appear in the adversarial set
+- latency and payload cost are acceptable for demo use
 
 ---
 
-## 6. Immediate Next Work Order
+## Phase 3 — API surgery
 
-1. Patch `.gitignore` so `PLAN.md` can be tracked.
-2. Generate corpus ledger and explain the 743 vs 325 mismatch.
-3. Create `scripts/smoke_visual_retrieval.py` skeleton against Qdrant/Modal interface.
-4. Add Modal app skeleton for pinned visual model.
-5. Rebuild visual index for the active corpus.
-6. Wire local API to visual-only retrieval.
-7. Run one browser query end-to-end.
+**Goal:** replace the repo's broken runtime path with the real v1 path.
 
-That is the spine. Everything else is decoration until this works.
+### Tasks
+1. Route `/v1/ask` to the Tomoro retriever + Gates A/B.
+2. Confirm and fix the prior-audit bugs that still matter to v1:
+   - duplicate `event_stream` execution
+   - image route stub
+   - Gemini stream parsing path
+   - any inherited readiness / telemetry bugs on the live path
+3. Implement static page-image serving from synced files.
+4. Add demo token + rate limiting.
+5. Add explicit `warming` SSE event.
+
+### Gate
+Phase 3 is complete only when:
+- one query causes exactly one retrieval run
+- one curl request returns a non-empty grounded answer with citations
+- one out-of-corpus query refuses cleanly
+- citation image route resolves to the correct page image
+
+---
+
+## Phase 4 — Web demo loop
+
+**Goal:** prove the product loop in the browser.
+
+### Tasks
+1. Point Next.js to `/v1/ask`.
+2. Wire citation chips to the local page-image route.
+3. Implement page-image lightbox.
+4. Show `warming` state cleanly.
+5. Keep `noindex`, but do not pretend it is protection.
+
+### Gate
+Phase 4 is complete only when:
+- browser query returns grounded answer + citations
+- clicking a citation opens the correct page image
+- out-of-corpus query refuses clearly
+- browser console is clean
+
+---
+
+## Phase 5 — Public demo (RED gate)
+
+**Goal:** expose the demo only after the loop is trustworthy.
+
+### Tasks
+1. Freeze config and runtime docs.
+2. Re-run full eval + health checks.
+3. Serve behind demo token + rate limits.
+4. Only then consider DNS / public exposure.
+
+### Gate
+Phase 5 requires explicit approval for:
+- Modal GPU spend
+- VPS public hosting
+- DNS / public exposure
+
+---
+
+## 4. Non-goals / kill list
+
+- Do **not** debug or ship the April hybrid for v1.
+- Do **not** introduce Qdrant into v1 runtime.
+- Do **not** switch to Tomoro 8B before green.
+- Do **not** add OCR/text/sparse/hybrid retrieval in v1.
+- Do **not** expand the corpus before the 738-row demo works.
+- Do **not** treat hand-picked known queries as evaluation.
+- Do **not** trust prompt wording to enforce refusal.
+- Do **not** expose static page images publicly without access control.
+- Do **not** mark receipts as verified unless they are fresh and saved in the repo.
+- Do **not** let the long-term ship ambition hijack v1 execution.
+
+---
+
+## 5. SHIP north-star positioning
+
+There is a broader ambition beyond v1:
+- `urban-rag.tanmaychoudhary.com`
+- ≥200 documents
+- ≥50,000 pages
+- p95 ≤ 4s warm
+- `IndianPlanningBench v0.1`
+
+That ambition matters, but it is **not** the acceptance criteria for this file.
+
+This plan only exists to get a trustworthy green demo over the current 738-row corpus.
+The broader ship roadmap should live in a separate `SHIP_PLAN.md` and should begin **after** this plan is green.
+
+The bridge between v1 and SHIP is simple:
+- the adversarial eval matrix from Phase 1 becomes the seed of `IndianPlanningBench`
+- every future model / DPI / corpus change must live behind a versioned retrieval profile
+- page/citation contract must never break while scaling
+
+---
+
+## Appendix A — Acceptance checklist
+
+Before calling v1 green, all must be true:
+
+- [ ] Tomoro retriever source is committed
+- [ ] fresh volume receipts are in `launch/artifacts/`
+- [ ] canonical tensor and metadata are explicitly named
+- [ ] 738-row corpus definition is explicit and test PNGs are excluded
+- [ ] adversarial eval exists and is reproducible
+- [ ] Gate A is calibrated from real negatives
+- [ ] Gate B blocks unsupported answers
+- [ ] `/v1/ask` hits Tomoro, not April hybrid
+- [ ] citation chips open the correct page image
+- [ ] OOD queries refuse cleanly
+- [ ] public exposure remains gated until approval
+
+## Appendix B — Operational principle
+
+The durable rule for Urban RAG is:
+
+**Every embedding, DPI, or corpus change must live behind a versioned retrieval profile and must never break the page/citation contract.**
+
+That is how v1 becomes a product instead of another reset.
