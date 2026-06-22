@@ -53,22 +53,21 @@ def load_smoke_dataset() -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Mock retrieval for unit testing
+# Smoke/mock retrieval for unit testing (HONEST NAMING)
 #
 # In real CI, the retrieval pipeline returns actual candidates.
-# For unit testing without a live corpus, we use synthetic candidates
-# derived from the expected_pages in smoke.jsonl entries.
+# For unit testing without a live corpus, we use EXPLICIT smoke/mock candidates
+# (not called 'synthetic' to avoid implying real performance).
+# This is for harness testing only; real eval uses live retrieval.
 # ---------------------------------------------------------------------------
 
-def synthetic_candidates_for_entry(entry: dict[str, Any]) -> list[dict]:
-    """Build synthetic retrieval candidates from smoke entry expected_pages.
+def smoke_mock_candidates_for_entry(entry: dict[str, Any]) -> list[dict]:
+    """Build smoke/mock retrieval candidates from smoke entry expected_pages.
 
-    We simulate a retrieval system by returning the expected_pages in order,
-    plus some decoy pages.  This lets us test metric computation logic
-    without requiring a live Qdrant + embedding pipeline.
-
-    The key assertion we are testing: recall@10 computed from candidates
-    against expected_pages must meet threshold.
+    WARNING: This is mock data simulating perfect retrieval.
+    NOT real retrieval performance. Used only to test metric computation
+    logic in the eval harness without live Qdrant.
+    Phase 1: synthetic liar removed; this is explicitly smoke/mock.
     """
     expected = entry.get("expected_pages", [])
 
@@ -118,8 +117,8 @@ def recall_at_k(candidates: list[dict], expected_pages: set[str], k: int) -> flo
 
 
 def compute_recall_from_entry(entry: dict[str, Any], k: int = 10) -> float:
-    """Compute recall@k for a smoke entry using synthetic candidates."""
-    candidates = synthetic_candidates_for_entry(entry)
+    """Compute recall@k for a smoke entry using smoke/mock candidates."""
+    candidates = smoke_mock_candidates_for_entry(entry)
     expected_pages = set(entry.get("expected_pages", []))
     return recall_at_k(candidates, expected_pages, k)
 

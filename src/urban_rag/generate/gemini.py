@@ -328,13 +328,15 @@ async def _parse_sse_stream(resp: Any) -> AsyncIterator[_GeminiStreamEvent]:
                 logger.warning("gemini_sse_parse_error", raw=json_str[:100])
                 continue
 
-            # Extract text chunks
-            chunks = data.get("chunks", [])
-            for ch in chunks:
-                content_part = ch.get("content_part", {})
-                text = content_part.get("text", "")
-                if text:
-                    yield _GeminiStreamEvent(chunk=text)
+            # Extract text chunks - fixed to match real Gemini response shape (candidates/content/parts)
+            candidates = data.get("candidates", [])
+            for cand in candidates:
+                content = cand.get("content", {})
+                parts = content.get("parts", [])
+                for p in parts:
+                    text = p.get("text", "")
+                    if text:
+                        yield _GeminiStreamEvent(chunk=text)
 
             # Extract usage metadata from final chunk
             usage = data.get("usage_metadata", {})

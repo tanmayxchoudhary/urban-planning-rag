@@ -29,8 +29,8 @@ logger = structlog.get_logger(__name__)
 def _get_ragas_dependencies() -> dict[str, Any]:
     """Lazily import RAGAS dependencies and return them as a dict."""
     try:
+        from datasets import Dataset
         from ragas import evaluate
-        from ragas.dataset import Dataset
         from ragas.llms import LiteLLMStructuredLLM
         from ragas.metrics.collections import (
             AnswerCorrectness,

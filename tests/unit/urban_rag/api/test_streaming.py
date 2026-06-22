@@ -3,17 +3,21 @@
 Per VAL-API-007, VAL-API-011, VAL-API-012, VAL-API-035, VAL-API-036, VAL-API-037.
 """
 
+from pathlib import Path
+
+import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
 from urban_rag.api.main import (
+    GENERATION_FAILED_CODE,
     INTERNAL_CODE,
     OUT_OF_CORPUS_REASON,
     RETRIEVAL_TIMEOUT_CODE,
-    GENERATION_FAILED_CODE,
     _format_sse,
-    app,
     _query_store,
+    app,
+    settings,
 )
 
 
@@ -308,3 +312,101 @@ class TestEventOrderContract:
         })
         assert refused_event.startswith("event: refused\n")
         assert '"reason": "out_of_corpus"' in refused_event
+
+
+class TestCorpusAndReadinessEndpoints:
+    """Truthful corpus/image/readyz behavior for the API layer."""
+
+    def _write_manifest(self, manifest_path: Path) -> str:
+        doc_hash = "abc123doc"
+        frame = pd.DataFrame(
+            [
+                {
+                    "doc_hash": doc_hash,
+                    "filename": "sample.pdf",
+                    "title": "Sample Document",
+                    "family": "OTHER",
+                    "jurisdiction": None,
+                    "publisher": None,
+                    "year": None,
+                    "version": "1",
+                    "license": "unknown",
+                    "page_count": 3,
+                    "size_bytes": 1234,
+                    "storage_uri": "",
+                    "ingested_at": "2026-06-18T00:00:00+00:00",
+                    "indexed_at": "2026-06-18T01:00:00+00:00",
+                }
+            ]
+        )
+        frame.to_parquet(manifest_path)
+        return doc_hash
+
+    def test_corpus_endpoint_reads_manifest(self, tmp_path: Path):
+        manifest_path = tmp_path / "manifest.parquet"
+        doc_hash = self._write_manifest(manifest_path)
+        old_manifest = settings.manifest_path
+        try:
+            settings.manifest_path = str(manifest_path)
+            client = TestClient(app)
+            response = client.get("/v1/corpus")
+            assert response.status_code == 200
+            payload = response.json()
+            assert payload["totals"] == {"documents": 1, "pages": 3}
+            assert payload["documents"][0]["doc_id"] == doc_hash
+        finally:
+            settings.manifest_path = old_manifest
+
+    def test_page_image_returns_503_when_doc_exists_but_png_missing(self, tmp_path: Path):
+        manifest_path = tmp_path / "manifest.parquet"
+        docs_dir = tmp_path / "docs"
+        page_images_dir = tmp_path / "page_images"
+        docs_dir.mkdir()
+        page_images_dir.mkdir()
+        doc_hash = self._write_manifest(manifest_path)
+        doc_dir = docs_dir / doc_hash
+        doc_dir.mkdir()
+        (doc_dir / "source.pdf").write_bytes(b"%PDF-1.4\n")
+
+        old_manifest = settings.manifest_path
+        old_docs = settings.docs_dir
+        old_page_images = settings.page_images_dir
+        try:
+            settings.manifest_path = str(manifest_path)
+            settings.docs_dir = str(docs_dir)
+            settings.page_images_dir = str(page_images_dir)
+            client = TestClient(app)
+            response = client.get(f"/v1/corpus/{doc_hash}/pages/1/image")
+            assert response.status_code == 503
+            payload = response.json()
+            assert payload["error"]["code"] == "page_asset_unavailable"
+            assert payload["details"]["source_pdf_exists"] is True
+        finally:
+            settings.manifest_path = old_manifest
+            settings.docs_dir = old_docs
+            settings.page_images_dir = old_page_images
+
+    def test_readyz_reports_missing_page_image_root_as_not_ready(self, tmp_path: Path):
+        manifest_path = tmp_path / "manifest.parquet"
+        docs_dir = tmp_path / "docs"
+        docs_dir.mkdir()
+        self._write_manifest(manifest_path)
+
+        old_manifest = settings.manifest_path
+        old_docs = settings.docs_dir
+        old_page_images = settings.page_images_dir
+        try:
+            settings.manifest_path = str(manifest_path)
+            settings.docs_dir = str(docs_dir)
+            settings.page_images_dir = str(tmp_path / "missing_page_images")
+            client = TestClient(app)
+            response = client.get("/v1/readyz")
+            assert response.status_code == 503
+            payload = response.json()
+            assert payload["checks"]["manifest"] is True
+            assert payload["checks"]["docs_dir"] is True
+            assert payload["checks"]["page_images_dir"] is False
+        finally:
+            settings.manifest_path = old_manifest
+            settings.docs_dir = old_docs
+            settings.page_images_dir = old_page_images

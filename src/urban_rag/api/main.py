@@ -22,6 +22,7 @@ import uuid
 from collections import defaultdict
 from collections.abc import AsyncGenerator
 from datetime import UTC, datetime
+from pathlib import Path
 from time import time
 from typing import TYPE_CHECKING, Any, Literal
 
@@ -34,7 +35,7 @@ from fastapi import (
     status,
 )
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
 from urban_rag.common.errors import UrbanRagError
@@ -375,6 +376,54 @@ def _safe_model_dump(obj: Any) -> dict[str, Any]:
     return {}
 
 
+def _load_manifest_rows() -> list[dict[str, Any]]:
+    """Load manifest.parquet rows lazily for corpus/image endpoints.
+
+    Returns an empty list when the manifest file does not exist.
+    """
+    manifest_path = Path(settings.manifest_path)
+    if not manifest_path.exists():
+        return []
+
+    import pandas as pd
+
+    frame = pd.read_parquet(manifest_path)
+    return frame.to_dict(orient="records")
+
+
+def _find_manifest_row(doc_id: str) -> dict[str, Any] | None:
+    """Resolve a document identifier against manifest rows.
+
+    Accepts doc hash, filename, or filename stem.
+    """
+    for row in _load_manifest_rows():
+        filename = str(row.get("filename") or "")
+        stem = Path(filename).stem
+        if doc_id in {str(row.get("doc_hash") or ""), filename, stem}:
+            return row
+    return None
+
+
+def _candidate_page_image_paths(doc_hash: str, page_num: int) -> list[Path]:
+    """Return likely local PNG paths for a rendered page image."""
+    return [
+        Path(settings.page_images_dir) / f"{doc_hash}__page_{page_num:04d}.png",
+        Path(settings.page_images_dir) / doc_hash / f"page_{page_num:04d}.png",
+        Path(settings.docs_dir) / doc_hash / "pages" / f"page_{page_num:04d}.png",
+    ]
+
+
+def _page_assets_details(doc_hash: str, page_num: int) -> dict[str, Any]:
+    """Describe the current local page-asset state for diagnostics."""
+    source_pdf = Path(settings.docs_dir) / doc_hash / "source.pdf"
+    candidates = [str(path) for path in _candidate_page_image_paths(doc_hash, page_num)]
+    return {
+        "source_pdf_exists": source_pdf.exists(),
+        "source_pdf": str(source_pdf),
+        "candidate_image_paths": candidates,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Dependency: get client IP for rate limiting
 # ---------------------------------------------------------------------------
@@ -680,115 +729,6 @@ async def ask_stream(query_id: str) -> StreamingResponse:
             if trace_url:
                 _query_store[query_id]["trace_url"] = trace_url
 
-        # Emit retrieval_started
-        yield _format_sse("retrieval_started", {
-            "query_id": query_id,
-            "ts": datetime.now(UTC).isoformat(),
-        })
-
-        # Run retrieval with a timeout to prevent SSE from hanging
-        try:
-            retrieval_result = await asyncio.wait_for(
-                retrieve_async(
-                    query=question,
-                    top_k=5,
-                    rerank_top_n=5,
-                    channel_timeout=15.0,
-                    rerank_timeout=30.0,
-                    filters={},
-                    use_rerank=True,
-                ),
-                timeout=20.0,  # SSE stream timeout - must emit events before this
-            )
-        except TimeoutError:
-            # Retrieval timed out - emit error and done immediately
-            _query_store[query_id]["status"] = "error"
-            _query_store[query_id]["error_code"] = RETRIEVAL_TIMEOUT_CODE
-            _query_store[query_id]["error_message"] = (
-                "Retrieval timed out. The corpus may be empty or the service is slow."
-            )
-            _query_store[query_id]["http_status"] = 504
-            yield _format_sse("error", {
-                "code": RETRIEVAL_TIMEOUT_CODE,
-                "message": "Retrieval timed out. The corpus may be empty or the service is slow.",
-                "stage": "retrieval",
-            })
-            yield _format_sse("done", {"query_id": query_id})
-            return
-
-        # Emit retrieval_completed
-        candidates_data = [
-            {
-                "page_id": c.page_id,
-                "score": c.score,
-                "channel_scores": c.channel_scores,
-                "page_image_uri": c.page_image_uri,
-                "extracted_text_excerpt": c.extracted_text_excerpt,
-                "section_title": c.section_title,
-            }
-            for c in retrieval_result.candidates
-        ]
-        yield _format_sse("retrieval_completed", {
-            "query_id": query_id,
-            "candidates": candidates_data,
-            "latency_ms": retrieval_result.latency_ms,
-        })
-
-        # Emit generation_started
-        yield _format_sse("generation_started", {
-            "query_id": query_id,
-            "model": "gemini-2.5-flash",
-            "ts": datetime.now(UTC).isoformat(),
-        })
-
-        # Run generation and stream tokens
-        async for event in answer(
-            query=question,
-            retrieval_result=retrieval_result,
-            mode=mode,
-        ):
-            event_name = event.__class__.__name__
-            if event_name == "TokenEvent":
-                yield _format_sse("token", {"text": getattr(event, "chunk", "")})
-            elif event_name == "GenerationCompletedEvent":
-                # Store the completed answer and update status
-                _query_store[query_id]["status"] = "completed"
-                _query_store[query_id]["answer"] = {
-                    "answer_markdown": getattr(event, "answer_markdown", ""),
-                    "citations": [c.model_dump() for c in getattr(event, "citations", [])],
-                    "confidence": getattr(event, "confidence", "medium"),
-                    "diagnostics": _safe_model_dump(getattr(event, "diagnostics", None)),
-                    "query_id": getattr(event, "query_id", query_id),
-                }
-                # Also emit generation_completed to SSE stream per VAL-API-007
-                yield _format_sse("generation_completed", {
-                    "answer_markdown": getattr(event, "answer_markdown", ""),
-                    "citations": [c.model_dump() for c in getattr(event, "citations", [])],
-                    "confidence": getattr(event, "confidence", "medium"),
-                    "diagnostics": _safe_model_dump(getattr(event, "diagnostics", None)),
-                    "query_id": getattr(event, "query_id", query_id),
-                })
-            elif event_name == "RefusedEvent":
-                _query_store[query_id]["status"] = "refused"
-                _query_store[query_id]["refused_reason"] = getattr(event, "reason", "unknown")
-                _query_store[query_id]["refused_message"] = getattr(event, "message", "")
-                yield _format_sse("refused", {
-                    "reason": getattr(event, "reason", "unknown"),
-                    "message": getattr(event, "message", ""),
-                })
-            elif event_name == "ErrorEvent":
-                _query_store[query_id]["status"] = "error"
-                _query_store[query_id]["error_code"] = getattr(event, "code", INTERNAL_CODE)
-                _query_store[query_id]["error_message"] = getattr(event, "message", "")
-                _query_store[query_id]["error_stage"] = getattr(event, "stage", "generation")
-                yield _format_sse("error", {
-                    "code": getattr(event, "code", "internal"),
-                    "message": getattr(event, "message", ""),
-                    "stage": getattr(event, "stage", "generation"),
-                })
-
-        # Emit done
-        yield _format_sse("done", {"query_id": query_id})
 
     return StreamingResponse(
         event_stream(),
@@ -984,14 +924,47 @@ async def get_corpus() -> CorpusResponse:
     """Return the corpus manifest with document listing and totals.
 
     Per VAL-API-023: returns corpus_version, indexed_at, documents[], totals.
+    Reads the local manifest parquet when present instead of returning a fake empty stub.
     """
-    # TODO: Wire to actual manifest store (LanceDB / parquet)
-    # For now, return placeholder data structure
+    rows = _load_manifest_rows()
+    if not rows:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "error": {
+                    "code": "corpus_unavailable",
+                    "message": (
+                        f"Manifest not found or empty at {settings.manifest_path}. "
+                        "Corpus metadata is not currently available."
+                    ),
+                    "trace_id": "corpus",
+                }
+            },
+        )
+
+    documents = [
+        CorpusDocument(
+            doc_id=str(row.get("doc_hash") or row.get("filename") or "unknown"),
+            title=str(row.get("title") or row.get("filename") or "untitled"),
+            family=str(row.get("family") or "OTHER"),
+            jurisdiction=row.get("jurisdiction"),
+            page_count=int(row.get("page_count") or 0),
+            version=str(row.get("version")) if row.get("version") is not None else None,
+        )
+        for row in rows
+    ]
+
+    indexed_values = [row.get("indexed_at") for row in rows if row.get("indexed_at") is not None]
+    indexed_at = max((str(value) for value in indexed_values), default=datetime.now(UTC).isoformat())
+
     return CorpusResponse(
         corpus_version=settings.corpus_version,
-        indexed_at=datetime.now(UTC).isoformat(),
-        documents=[],
-        totals={"documents": 0, "pages": 0},
+        indexed_at=indexed_at,
+        documents=documents,
+        totals={
+            "documents": len(documents),
+            "pages": sum(doc.page_count for doc in documents),
+        },
     )
 
 
@@ -1008,22 +981,63 @@ async def get_corpus() -> CorpusResponse:
         200: {"description": "PNG image"},
         302: {"description": "Redirect to presigned URL"},
         404: {"description": "Document or page not found"},
+        503: {"description": "Page assets not yet available"},
     },
 )
 async def get_page_image(doc_id: str, page_num: int) -> Response:
     """Return the rendered PNG for a specific page.
 
-    Either returns PNG bytes directly or a 302 redirect to a presigned URL.
+    Serves a local PNG when present, redirects to a remote asset when storage_uri
+    is an HTTP URL, and returns 503 when the document exists but rendered page
+    assets are not available yet.
     """
-    # TODO: Wire to actual page image store (S3 / local path)
+    row = _find_manifest_row(doc_id)
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "not_found",
+                    "message": f"Document {doc_id} not found in manifest.",
+                    "trace_id": doc_id,
+                }
+            },
+        )
+
+    max_pages = int(row.get("page_count") or 0)
+    if page_num < 1 or (max_pages and page_num > max_pages):
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail={
+                "error": {
+                    "code": "not_found",
+                    "message": f"Page {page_num} of document {doc_id} not found.",
+                    "trace_id": doc_id,
+                }
+            },
+        )
+
+    doc_hash = str(row.get("doc_hash") or doc_id)
+    for candidate in _candidate_page_image_paths(doc_hash, page_num):
+        if candidate.exists():
+            return FileResponse(candidate, media_type="image/png")
+
+    storage_uri = str(row.get("storage_uri") or "")
+    if storage_uri.startswith(("http://", "https://")) and storage_uri.endswith(".png"):
+        return RedirectResponse(storage_uri, status_code=status.HTTP_302_FOUND)
+
+    details = _page_assets_details(doc_hash, page_num)
     raise HTTPException(
-        status_code=status.HTTP_404_NOT_FOUND,
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
         detail={
             "error": {
-                "code": "not_found",
-                "message": f"Page {page_num} of document {doc_id} not found.",
+                "code": "page_asset_unavailable",
+                "message": (
+                    f"Document {doc_id} exists, but page {page_num} PNG is not rendered or mounted yet."
+                ),
                 "trace_id": doc_id,
-            }
+            },
+            "details": details,
         },
     )
 
@@ -1092,41 +1106,36 @@ async def metrics() -> Response:
         503: {"description": "Service not ready"},
     },
 )
-async def readyz() -> ReadyzResponse:
-    """Readiness probe checking all dependencies.
+async def readyz() -> ReadyzResponse | JSONResponse:
+    """Readiness probe checking local corpus prerequisites.
 
-    Per VAL-API-027/028: returns 200 only when:
-        - Embedding service reachable
-        - Qdrant reachable
-        - Error rate < 50% in last 10 queries
-
-    Returns 503 if any dependency fails.
+    The previous implementation lied by marking missing dependencies as healthy.
+    This version reports the real local state: manifest, docs tree, and page-image
+    root presence. External retrieval/generation services remain out of scope here.
     """
+    manifest_exists = Path(settings.manifest_path).exists()
+    docs_dir_exists = Path(settings.docs_dir).exists()
+    page_images_dir_exists = Path(settings.page_images_dir).exists()
+
     checks: dict[str, bool] = {
-        "embed_service": False,  # TODO: actual health check
-        "qdrant": False,        # TODO: actual health check
-        "error_rate": True,     # TODO: actual error rate check
+        "manifest": manifest_exists,
+        "docs_dir": docs_dir_exists,
+        "page_images_dir": page_images_dir_exists,
     }
     details: dict[str, Any] = {
-        "embed_service": "unreachable",
-        "qdrant": "unreachable",
-        "error_rate": "ok",
+        "manifest_path": settings.manifest_path,
+        "docs_dir": settings.docs_dir,
+        "page_images_dir": settings.page_images_dir,
     }
 
-    # TODO: Wire actual dependency checks
-    # For now, return a "degraded" state that still passes
-    checks["embed_service"] = True
-    checks["qdrant"] = True
-    details["embed_service"] = "ok"
-    details["qdrant"] = "ok (not connected)"
-
-    all_ready = all(checks.values())
-
-    return ReadyzResponse(
-        status="ready" if all_ready else "not_ready",
+    response = ReadyzResponse(
+        status="ready" if all(checks.values()) else "not_ready",
         checks=checks,
         details=details,
     )
+    if all(checks.values()):
+        return response
+    return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content=response.model_dump())
 
 
 # ---------------------------------------------------------------------------

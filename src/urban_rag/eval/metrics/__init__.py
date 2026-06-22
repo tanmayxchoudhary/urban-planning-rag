@@ -1,4 +1,4 @@
-"""Evaluation metrics."""
+"""Evaluation metrics (retrieval pluggable, honest smoke/mock support)."""
 
 from urban_rag.eval.metrics.ragas_wrapper import (
     RagasEvaluationInput,

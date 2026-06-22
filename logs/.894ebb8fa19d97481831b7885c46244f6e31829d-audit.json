@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/root/projects/urban-planning-rag/logs/.894ebb8fa19d97481831b7885c46244f6e31829d-audit.json",
+    "files": [
+        {
+            "date": 1781785562575,
+            "name": "/root/projects/urban-planning-rag/logs/mcp-puppeteer-2026-06-18.log",
+            "hash": "84318420b009de019c70a85eed1aa588ee2908a38c5596c97426076e99474977"
+        }
+    ],
+    "hashType": "sha256"
+}

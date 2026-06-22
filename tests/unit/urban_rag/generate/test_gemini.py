@@ -15,6 +15,7 @@ from urban_rag.generate.gemini import (
     _calculate_cost,
     _determine_confidence,
     _GeminiStreamEvent,
+    _parse_sse_stream,
     generate_stream,
     generate_sync,
     smoke_test,

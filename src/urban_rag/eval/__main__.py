@@ -100,19 +100,23 @@ def load_eval_dataset(dataset_name: str) -> list[dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Synthetic candidate generation for evaluation
+# Smoke/mock candidate generation for evaluation (HONEST MODE)
+#
+# This is EXPLICITLY a mock for smoke testing only.
+# It does NOT represent real retrieval performance.
+# Real eval requires live retrieval candidates passed in.
+# Using this without --smoke-mock flag will fail loudly.
 # ---------------------------------------------------------------------------
 
 
-def _synthetic_candidates_for_entry(entry: dict[str, Any]) -> list[dict]:
-    """Build synthetic retrieval candidates for a smoke entry.
+def _smoke_mock_candidates_for_entry(entry: dict[str, Any]) -> list[dict]:
+    """Build MOCK (not real) retrieval candidates for smoke dataset entries.
 
-    For offline/unit-test evaluation we simulate a perfect retrieval system
-    by returning the expected_pages in ranked order followed by decoys.
-    This mirrors the approach in tests/eval/test_smoke_gates.py.
-
-    In a future full-pipeline run, these would be replaced by live Qdrant
-    retrieval candidates.
+    WARNING: This simulates perfect retrieval by placing expected_pages first.
+    This is ONLY for smoke/mock testing of the eval harness itself.
+    It is NOT a measure of real RAG retrieval quality.
+    Phase 1 honest-eval: synthetic-perfect-oracle path is deprecated.
+    Real candidates must be provided via retrieval-pluggable interface.
     """
     expected = entry.get("expected_pages", [])
     candidates = []
@@ -132,6 +136,18 @@ def _synthetic_candidates_for_entry(entry: dict[str, Any]) -> list[dict]:
     return candidates
 
 
+def _detect_synthetic_placeholders(candidates: list[dict]) -> bool:
+    """Detect if candidates contain synthetic decoy placeholders.
+
+    If true, this indicates mock data, not real retrieval output.
+    Used to fail loudly in honest-eval mode.
+    """
+    for c in candidates:
+        if "decoy_page_" in c.get("page_id", ""):
+            return True
+    return False
+
+
 # ---------------------------------------------------------------------------
 # Metric computation per entry
 # ---------------------------------------------------------------------------
@@ -139,19 +155,45 @@ def _synthetic_candidates_for_entry(entry: dict[str, Any]) -> list[dict]:
 
 def _compute_retrieval_metrics_for_entry(
     entry: dict[str, Any],
-) -> tuple[RetrievalMetricsResult, list[_RCandidate]]:
-    """Compute retrieval metrics for a smoke entry using synthetic candidates.
+    provided_candidates: list[dict] | None = None,
+    use_smoke_mock: bool = False,
+) -> tuple[RetrievalMetricsResult, list[_RCandidate], str]:
+    """Compute retrieval metrics for an entry.
+
+    Retrieval-pluggable: accepts provided_candidates from real retrieval.
+    If use_smoke_mock=True, uses honest mock (labeled as such).
+    Fails loudly if neither provided nor explicit mock flag (prevents pretending synthetic is real).
 
     Args:
-        entry: A smoke.jsonl dict entry with expected_pages and expected_documents.
+        entry: dataset entry
+        provided_candidates: real candidates from retrieval system (preferred)
+        use_smoke_mock: if True, allow honest smoke/mock mode
 
     Returns:
-        A (metrics_result, candidates) tuple.
+        (metrics_result, candidates, mode_label) where mode_label is 'real' or 'smoke/mock'
     """
     expected_pages = set(entry.get("expected_pages", []))
     expected_docs = set(entry.get("expected_documents", []))
 
-    raw_candidates = _synthetic_candidates_for_entry(entry)
+    mode_label = "real"
+    if provided_candidates is not None:
+        raw_candidates = provided_candidates
+        if _detect_synthetic_placeholders(raw_candidates):
+            raise ValueError(
+                "HONEST-EVAL: provided_candidates contain synthetic decoy placeholders. "
+                "This is not real retrieval output. Use use_smoke_mock=True for mock mode."
+            )
+    elif use_smoke_mock:
+        raw_candidates = _smoke_mock_candidates_for_entry(entry)
+        mode_label = "smoke/mock"
+    else:
+        raise ValueError(
+            "HONEST-EVAL FAILURE: No real retrieval candidates provided and use_smoke_mock=False. "
+            "The synthetic-perfect-oracle path has been removed. "
+            "Provide real candidates or explicitly enable --smoke-mock for smoke testing only. "
+            "This ensures eval does not pretend mock recall@10=1.0 is real performance."
+        )
+
     candidates = [
         _RCandidate(
             page_id=c["page_id"],
@@ -169,7 +211,7 @@ def _compute_retrieval_metrics_for_entry(
         expected_pages=expected_pages,
         expected_documents=expected_docs,
     )
-    return metrics, candidates
+    return metrics, candidates, mode_label
 
 
 # ---------------------------------------------------------------------------
@@ -238,17 +280,26 @@ def run_smoke_eval(
     tag: str,
     output_dir: Path,
     dry_run: bool = False,
+    use_smoke_mock: bool = False,
+    provided_candidates_map: dict[int, list[dict]] | None = None,
 ) -> EvalRunResult:
-    """Run the evaluation pipeline for a dataset.
+    """Run the evaluation pipeline for a dataset (HONEST EVAL MODE).
+
+    Retrieval-pluggable structure:
+    - Pass provided_candidates_map for real retrieval output (preferred for honest eval)
+    - Or set use_smoke_mock=True for explicit smoke/mock mode (labeled honestly, not as real)
+    - Without either: fails loudly with clear error (no more synthetic liar)
 
     Args:
         dataset_name: Name of the dataset (e.g. "smoke", "regression").
         tag: A short identifier for this run (e.g. "v1", "candidate").
         output_dir: Directory where run artifacts are written.
         dry_run: If True, log what would be done without executing.
+        use_smoke_mock: Explicitly enable honest smoke/mock mode (names it as such).
+        provided_candidates_map: {entry_idx: candidates} for real retrieval.
 
     Returns:
-        EvalRunResult with per-entry and aggregate results.
+        EvalRunResult with per-entry and aggregate results. Mode is recorded.
     """
     started_at = datetime.now(tz=UTC)
 
@@ -258,10 +309,16 @@ def run_smoke_eval(
         tag=tag,
         output_dir=str(output_dir),
         dry_run=dry_run,
+        use_smoke_mock=use_smoke_mock,
     )
 
     if dry_run:
         log.warning("eval_dry_run_mode")
+
+    if use_smoke_mock:
+        log.warning("eval_smoke_mock_mode_active - recall metrics are from MOCK, not real retrieval")
+    elif provided_candidates_map is None:
+        log.info("eval_real_mode - expecting provided_candidates or will fail loudly")
 
     # ── Load dataset ──────────────────────────────────────────────────────────
     try:
@@ -275,14 +332,20 @@ def run_smoke_eval(
     # Evaluate each entry
     entry_results: list[EvalEntryResult] = []
     assertions_summary: dict[str, dict[str, Any]] = {}
+    eval_modes_used: set[str] = set()
 
     for idx, entry in enumerate(entries):
         question = entry.get("question", "")
 
-        # Retrieve metrics
+        # Retrieve metrics - pluggable
         metrics: RetrievalMetricsResult | None = None
+        mode_label = "unknown"
         try:
-            metrics, _ = _compute_retrieval_metrics_for_entry(entry)
+            provided = provided_candidates_map.get(idx) if provided_candidates_map else None
+            metrics, _, mode_label = _compute_retrieval_metrics_for_entry(
+                entry, provided_candidates=provided, use_smoke_mock=use_smoke_mock
+            )
+            eval_modes_used.add(mode_label)
         except Exception as exc:
             log.warning(
                 "entry_retrieval_metrics_failed",
@@ -290,6 +353,7 @@ def run_smoke_eval(
                 question=question[:60],
                 error=str(exc),
             )
+            # In honest mode, we do not silently fall back to synthetic
 
         # Build per-assertion results
         assertions: list[EvalAssertionResult] = []
@@ -298,6 +362,7 @@ def run_smoke_eval(
         if metrics is not None:
             recall_at_10 = metrics.recall_at_10
             recall_passed = recall_at_10 >= RECALL_AT_10_THRESHOLD
+            mode_note = f" (mode={mode_label})" if mode_label != "real" else ""
             assertions.append(
                 EvalAssertionResult(
                     entry_idx=idx,
@@ -310,7 +375,7 @@ def run_smoke_eval(
                     message=(
                         f"recall@10={recall_at_10:.3f} "
                         f"{'>= ' if recall_passed else '< '}"
-                        f"threshold={RECALL_AT_10_THRESHOLD}"
+                        f"threshold={RECALL_AT_10_THRESHOLD}{mode_note}"
                     ),
                 )
             )
@@ -328,8 +393,7 @@ def run_smoke_eval(
                 ("recall@20", metrics.recall_at_20, 0.90),
                 ("mrr@10", metrics.mrr_at_10, 0.65),
                 ("ndcg@10", metrics.ndcg_at_10, 0.70),
-                # coverage@10 requires distinct doc_ids; synthetic data has 1 page
-                # per doc so this is always 0.0 — include for reporting only
+                # coverage@10 requires distinct doc_ids; in mock mode always 0.0
                 ("coverage@10", metrics.coverage_at_10, 0.0),
             ]:
                 m_name, m_val, m_thresh = metric_tuple
@@ -346,7 +410,7 @@ def run_smoke_eval(
                         message=(
                             f"{m_name}={m_val:.3f} "
                             f"{'>= ' if m_passed else '< '}"
-                            f"threshold={m_thresh}"
+                            f"threshold={m_thresh}{mode_note}"
                         ),
                     )
                 )
@@ -570,12 +634,19 @@ def run(
         "--dry-run",
         help="Log what would be done without writing artifacts",
     ),
+    smoke_mock: bool = typer.Option(
+        False,
+        "--smoke-mock",
+        help="Use honest smoke/mock mode (explicitly labeled; NOT real retrieval). Fails loudly without this or real candidates.",
+    ),
 ) -> None:
     """Run evaluation against a dataset and produce a summary JSON.
 
+    HONEST EVAL: synthetic oracle removed. Use --smoke-mock for mock testing or provide real candidates.
+
     Examples:
 
-        python -m urban_rag.eval run --dataset smoke --tag v1
+        python -m urban_rag.eval run --dataset smoke --tag v1 --smoke-mock
 
         python -m urban_rag.eval run --dataset regression --tag candidate \\
             --output data/eval/runs/candidate/
@@ -614,6 +685,7 @@ def run(
             tag=tag,
             output_dir=output_dir,
             dry_run=dry_run,
+            use_smoke_mock=smoke_mock,
         )
     except FileNotFoundError as e:
         console.print(f"[red]Dataset not found:[/red] {e}")
