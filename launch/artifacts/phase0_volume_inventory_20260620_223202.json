@@ -1,0 +1,3238 @@
+[
+  {
+    "path": "embeddings.pt",
+    "size_bytes": 600320318
+  },
+  {
+    "path": "embeddings_tomoro320_canary_20.pt",
+    "size_bytes": 16270666
+  },
+  {
+    "path": "embeddings_tomoro320_canary_3.pt",
+    "size_bytes": 2442179
+  },
+  {
+    "path": "embeddings_tomoro320_full.pt",
+    "size_bytes": 600320551
+  },
+  {
+    "path": "hf_cache/modules/__init__.py",
+    "size_bytes": 0
+  },
+  {
+    "path": "hf_cache/modules/transformers_modules/TomoroAI/__init__.py",
+    "size_bytes": 0
+  },
+  {
+    "path": "hf_cache/modules/transformers_modules/TomoroAI/tomoro_hyphen_colqwen3_hyphen_embed_hyphen_4b/__init__.py",
+    "size_bytes": 0
+  },
+  {
+    "path": "hf_cache/modules/transformers_modules/TomoroAI/tomoro_hyphen_colqwen3_hyphen_embed_hyphen_4b/bf790bd8780b098b86453444632a184bb770be1a/__init__.py",
+    "size_bytes": 0
+  },
+  {
+    "path": "hf_cache/modules/transformers_modules/TomoroAI/tomoro_hyphen_colqwen3_hyphen_embed_hyphen_4b/bf790bd8780b098b86453444632a184bb770be1a/__pycache__/configuration_colqwen3.cpython-311.pyc",
+    "size_bytes": 6147
+  },
+  {
+    "path": "hf_cache/modules/transformers_modules/TomoroAI/tomoro_hyphen_colqwen3_hyphen_embed_hyphen_4b/bf790bd8780b098b86453444632a184bb770be1a/__pycache__/modeling_colqwen3.cpython-311.pyc",
+    "size_bytes": 13895
+  },
+  {
+    "path": "hf_cache/modules/transformers_modules/TomoroAI/tomoro_hyphen_colqwen3_hyphen_embed_hyphen_4b/bf790bd8780b098b86453444632a184bb770be1a/__pycache__/processing_colqwen3.cpython-311.pyc",
+    "size_bytes": 40073
+  },
+  {
+    "path": "hf_cache/modules/transformers_modules/TomoroAI/tomoro_hyphen_colqwen3_hyphen_embed_hyphen_4b/bf790bd8780b098b86453444632a184bb770be1a/configuration_colqwen3.py",
+    "size_bytes": 4420
+  },
+  {
+    "path": "hf_cache/modules/transformers_modules/TomoroAI/tomoro_hyphen_colqwen3_hyphen_embed_hyphen_4b/bf790bd8780b098b86453444632a184bb770be1a/modeling_colqwen3.py",
+    "size_bytes": 10423
+  },
+  {
+    "path": "hf_cache/modules/transformers_modules/TomoroAI/tomoro_hyphen_colqwen3_hyphen_embed_hyphen_4b/bf790bd8780b098b86453444632a184bb770be1a/processing_colqwen3.py",
+    "size_bytes": 31584
+  },
+  {
+    "path": "hf_cache/modules/transformers_modules/__init__.py",
+    "size_bytes": 0
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/.no_exist/bf790bd8780b098b86453444632a184bb770be1a/audio_tokenizer_config.json",
+    "size_bytes": 0
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/.no_exist/bf790bd8780b098b86453444632a184bb770be1a/chat_template.json",
+    "size_bytes": 0
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/.no_exist/bf790bd8780b098b86453444632a184bb770be1a/model.safetensors",
+    "size_bytes": 0
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/124386803f142761528f710e77ae483f5f8c4fc4",
+    "size_bytes": 5292
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/241f16a17f1842a483fbe1d1c44f9bc683cdaf51",
+    "size_bytes": 5528
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/31349551d90c7606f325fe0f11bbb8bd5fa0d7c7",
+    "size_bytes": 1671853
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/4783fe10ac3adce15ac8f358ef5462739852c569",
+    "size_bytes": 2776833
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/5d804e9e08d7c23d4087bf1c8bee09a97ad34efc",
+    "size_bytes": 31584
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/5ebc317d3e6338c75d227f601ceed815dad12b5a",
+    "size_bytes": 1726
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/6c9aa622db521650cd11e859d37fd7c9311c94b3",
+    "size_bytes": 10423
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/951eae7ddd311d97b76b62d0600870353229e09d",
+    "size_bytes": 900
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/ac23c0aaa2434523c494330aeb79c58395378103",
+    "size_bytes": 613
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4",
+    "size_bytes": 11422654
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/b2bbef4d52ad6a9599bc3b258648c6a4af7f51a14cad853eda0773e1c90ba02d",
+    "size_bytes": 4990499880
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/b54f9135e44c1e81047e8d05cb027af8bc039eed",
+    "size_bytes": 707
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/c49a0d09288acac4d5323364e59018c61f36346c",
+    "size_bytes": 67770
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/c961ea815adda6923f2991c2037e7c7a49db9dc6",
+    "size_bytes": 4420
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/cfa216a402c214f0dd64fb28d8a9b4a3da81e226",
+    "size_bytes": 473
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/d66588ac9aef215ca72a47ce1cd2b89b3253085ccafe4ca06e754fc50e757ac7",
+    "size_bytes": 3886861528
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/blobs/e0d9afb21adea562d58131fd662fea55747cf88d",
+    "size_bytes": 867
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/refs/main",
+    "size_bytes": 40
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/added_tokens.json",
+    "size_bytes": 707
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/chat_template.jinja",
+    "size_bytes": 5292
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/config.json",
+    "size_bytes": 1726
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/configuration_colqwen3.py",
+    "size_bytes": 4420
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/merges.txt",
+    "size_bytes": 1671853
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/model-00001-of-00002.safetensors",
+    "size_bytes": 4990499880
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/model-00002-of-00002.safetensors",
+    "size_bytes": 3886861528
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/model.safetensors.index.json",
+    "size_bytes": 67770
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/modeling_colqwen3.py",
+    "size_bytes": 10423
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/preprocessor_config.json",
+    "size_bytes": 867
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/processing_colqwen3.py",
+    "size_bytes": 31584
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/processor_config.json",
+    "size_bytes": 473
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/special_tokens_map.json",
+    "size_bytes": 613
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/tokenizer.json",
+    "size_bytes": 11422654
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/tokenizer_config.json",
+    "size_bytes": 5528
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/video_preprocessor_config.json",
+    "size_bytes": 900
+  },
+  {
+    "path": "hf_cache/transformers/models--TomoroAI--tomoro-colqwen3-embed-4b/snapshots/bf790bd8780b098b86453444632a184bb770be1a/vocab.json",
+    "size_bytes": 2776833
+  },
+  {
+    "path": "hf_cache/xet/logs/xet_20260615T181457178+0000_2.log",
+    "size_bytes": 455882
+  },
+  {
+    "path": "metadata.json",
+    "size_bytes": 60088
+  },
+  {
+    "path": "metadata_tomoro320_canary_20.json",
+    "size_bytes": 1533
+  },
+  {
+    "path": "metadata_tomoro320_canary_3.json",
+    "size_bytes": 230
+  },
+  {
+    "path": "metadata_tomoro320_full.json",
+    "size_bytes": 60088
+  },
+  {
+    "path": "page_images/2671af3e4e26f088c42e2294185c1a5cafd56c59e825da427c79d4857bf8dda4__page_0001.png",
+    "size_bytes": 72285
+  },
+  {
+    "path": "page_images/2671af3e4e26f088c42e2294185c1a5cafd56c59e825da427c79d4857bf8dda4__page_0002.png",
+    "size_bytes": 79621
+  },
+  {
+    "path": "page_images/2671af3e4e26f088c42e2294185c1a5cafd56c59e825da427c79d4857bf8dda4__page_0003.png",
+    "size_bytes": 80897
+  },
+  {
+    "path": "page_images/2671af3e4e26f088c42e2294185c1a5cafd56c59e825da427c79d4857bf8dda4__page_0004.png",
+    "size_bytes": 75947
+  },
+  {
+    "path": "page_images/2671af3e4e26f088c42e2294185c1a5cafd56c59e825da427c79d4857bf8dda4__page_0005.png",
+    "size_bytes": 79677
+  },
+  {
+    "path": "page_images/swm_2016__page_0001.png",
+    "size_bytes": 37479
+  },
+  {
+    "path": "page_images/swm_2016__page_0002.png",
+    "size_bytes": 386684
+  },
+  {
+    "path": "page_images/swm_2016__page_0003.png",
+    "size_bytes": 418559
+  },
+  {
+    "path": "page_images/swm_2016__page_0004.png",
+    "size_bytes": 433472
+  },
+  {
+    "path": "page_images/swm_2016__page_0005.png",
+    "size_bytes": 443291
+  },
+  {
+    "path": "page_images/swm_2016__page_0006.png",
+    "size_bytes": 419640
+  },
+  {
+    "path": "page_images/swm_2016__page_0007.png",
+    "size_bytes": 408310
+  },
+  {
+    "path": "page_images/swm_2016__page_0008.png",
+    "size_bytes": 354143
+  },
+  {
+    "path": "page_images/swm_2016__page_0009.png",
+    "size_bytes": 414424
+  },
+  {
+    "path": "page_images/swm_2016__page_0010.png",
+    "size_bytes": 389953
+  },
+  {
+    "path": "page_images/swm_2016__page_0011.png",
+    "size_bytes": 435281
+  },
+  {
+    "path": "page_images/swm_2016__page_0012.png",
+    "size_bytes": 429656
+  },
+  {
+    "path": "page_images/swm_2016__page_0013.png",
+    "size_bytes": 379862
+  },
+  {
+    "path": "page_images/swm_2016__page_0014.png",
+    "size_bytes": 418541
+  },
+  {
+    "path": "page_images/swm_2016__page_0015.png",
+    "size_bytes": 427920
+  },
+  {
+    "path": "page_images/swm_2016__page_0016.png",
+    "size_bytes": 373088
+  },
+  {
+    "path": "page_images/swm_2016__page_0017.png",
+    "size_bytes": 361975
+  },
+  {
+    "path": "page_images/swm_2016__page_0018.png",
+    "size_bytes": 376910
+  },
+  {
+    "path": "page_images/swm_2016__page_0019.png",
+    "size_bytes": 441607
+  },
+  {
+    "path": "page_images/swm_2016__page_0020.png",
+    "size_bytes": 412019
+  },
+  {
+    "path": "page_images/swm_2016__page_0021.png",
+    "size_bytes": 277158
+  },
+  {
+    "path": "page_images/swm_2016__page_0022.png",
+    "size_bytes": 360584
+  },
+  {
+    "path": "page_images/swm_2016__page_0023.png",
+    "size_bytes": 341964
+  },
+  {
+    "path": "page_images/swm_2016__page_0024.png",
+    "size_bytes": 274080
+  },
+  {
+    "path": "page_images/swm_2016__page_0025.png",
+    "size_bytes": 332354
+  },
+  {
+    "path": "page_images/swm_2016__page_0026.png",
+    "size_bytes": 277727
+  },
+  {
+    "path": "page_images/swm_2016__page_0027.png",
+    "size_bytes": 116692
+  },
+  {
+    "path": "page_images/swm_2016__page_0028.png",
+    "size_bytes": 208346
+  },
+  {
+    "path": "page_images/swm_2016__page_0029.png",
+    "size_bytes": 262752
+  },
+  {
+    "path": "page_images/swm_2016__page_0030.png",
+    "size_bytes": 225597
+  },
+  {
+    "path": "page_images/swm_2016__page_0031.png",
+    "size_bytes": 241556
+  },
+  {
+    "path": "page_images/swm_2016__page_0032.png",
+    "size_bytes": 267971
+  },
+  {
+    "path": "page_images/swm_2016__page_0033.png",
+    "size_bytes": 160912
+  },
+  {
+    "path": "page_images/swm_2016__page_0034.png",
+    "size_bytes": 229887
+  },
+  {
+    "path": "page_images/swm_2016__page_0035.png",
+    "size_bytes": 240244
+  },
+  {
+    "path": "page_images/swm_2016__page_0036.png",
+    "size_bytes": 219597
+  },
+  {
+    "path": "page_images/swm_2016__page_0037.png",
+    "size_bytes": 247581
+  },
+  {
+    "path": "page_images/swm_2016__page_0038.png",
+    "size_bytes": 298663
+  },
+  {
+    "path": "page_images/swm_2016__page_0039.png",
+    "size_bytes": 209093
+  },
+  {
+    "path": "page_images/swm_2016__page_0040.png",
+    "size_bytes": 169444
+  },
+  {
+    "path": "page_images/swm_2016__page_0041.png",
+    "size_bytes": 158458
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0001.png",
+    "size_bytes": 806214
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0002.png",
+    "size_bytes": 10171
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0003.png",
+    "size_bytes": 42078
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0004.png",
+    "size_bytes": 10171
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0005.png",
+    "size_bytes": 318421
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0006.png",
+    "size_bytes": 10365
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0007.png",
+    "size_bytes": 282371
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0008.png",
+    "size_bytes": 293684
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0009.png",
+    "size_bytes": 238677
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0010.png",
+    "size_bytes": 240729
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0011.png",
+    "size_bytes": 285588
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0012.png",
+    "size_bytes": 10693
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0013.png",
+    "size_bytes": 215920
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0014.png",
+    "size_bytes": 234154
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0015.png",
+    "size_bytes": 232137
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0016.png",
+    "size_bytes": 226969
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0017.png",
+    "size_bytes": 238108
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0018.png",
+    "size_bytes": 166714
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0019.png",
+    "size_bytes": 307007
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0020.png",
+    "size_bytes": 77859
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0021.png",
+    "size_bytes": 312268
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0022.png",
+    "size_bytes": 320059
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0023.png",
+    "size_bytes": 293952
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0024.png",
+    "size_bytes": 10177
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0025.png",
+    "size_bytes": 271319
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0026.png",
+    "size_bytes": 254732
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0027.png",
+    "size_bytes": 238647
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0028.png",
+    "size_bytes": 255744
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0029.png",
+    "size_bytes": 129052
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0030.png",
+    "size_bytes": 207078
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0031.png",
+    "size_bytes": 264724
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0032.png",
+    "size_bytes": 302790
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0033.png",
+    "size_bytes": 264330
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0034.png",
+    "size_bytes": 264479
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0035.png",
+    "size_bytes": 242812
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0036.png",
+    "size_bytes": 275239
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0037.png",
+    "size_bytes": 346919
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0038.png",
+    "size_bytes": 282021
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0039.png",
+    "size_bytes": 240871
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0040.png",
+    "size_bytes": 295108
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0041.png",
+    "size_bytes": 290555
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0042.png",
+    "size_bytes": 256280
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0043.png",
+    "size_bytes": 283127
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0044.png",
+    "size_bytes": 294916
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0045.png",
+    "size_bytes": 268871
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0046.png",
+    "size_bytes": 154359
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0047.png",
+    "size_bytes": 323189
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0048.png",
+    "size_bytes": 277427
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0049.png",
+    "size_bytes": 270539
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0050.png",
+    "size_bytes": 298860
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0051.png",
+    "size_bytes": 129509
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0052.png",
+    "size_bytes": 500683
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0053.png",
+    "size_bytes": 264185
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0054.png",
+    "size_bytes": 251756
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0055.png",
+    "size_bytes": 250271
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0056.png",
+    "size_bytes": 233876
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0057.png",
+    "size_bytes": 253421
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0058.png",
+    "size_bytes": 169915
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0059.png",
+    "size_bytes": 180850
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0060.png",
+    "size_bytes": 286705
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0061.png",
+    "size_bytes": 253793
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0062.png",
+    "size_bytes": 268917
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0063.png",
+    "size_bytes": 226955
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0064.png",
+    "size_bytes": 200925
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0065.png",
+    "size_bytes": 277739
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0066.png",
+    "size_bytes": 245380
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0067.png",
+    "size_bytes": 209954
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0068.png",
+    "size_bytes": 211415
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0069.png",
+    "size_bytes": 233693
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0070.png",
+    "size_bytes": 212451
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0071.png",
+    "size_bytes": 260499
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0072.png",
+    "size_bytes": 219457
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0073.png",
+    "size_bytes": 254616
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0074.png",
+    "size_bytes": 276029
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0075.png",
+    "size_bytes": 190619
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0076.png",
+    "size_bytes": 179111
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0077.png",
+    "size_bytes": 139598
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0078.png",
+    "size_bytes": 178923
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0079.png",
+    "size_bytes": 221245
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0080.png",
+    "size_bytes": 222212
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0081.png",
+    "size_bytes": 223104
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0082.png",
+    "size_bytes": 202555
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0083.png",
+    "size_bytes": 217670
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0084.png",
+    "size_bytes": 95080
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0085.png",
+    "size_bytes": 298708
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0086.png",
+    "size_bytes": 158178
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0087.png",
+    "size_bytes": 157772
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0088.png",
+    "size_bytes": 245988
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0089.png",
+    "size_bytes": 207326
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0090.png",
+    "size_bytes": 193829
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0091.png",
+    "size_bytes": 206961
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0092.png",
+    "size_bytes": 28588
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0093.png",
+    "size_bytes": 251186
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0094.png",
+    "size_bytes": 279800
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0095.png",
+    "size_bytes": 287928
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0096.png",
+    "size_bytes": 259458
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0097.png",
+    "size_bytes": 265911
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0098.png",
+    "size_bytes": 279275
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0099.png",
+    "size_bytes": 273263
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0100.png",
+    "size_bytes": 293616
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0101.png",
+    "size_bytes": 291048
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0102.png",
+    "size_bytes": 262872
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0103.png",
+    "size_bytes": 270099
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0104.png",
+    "size_bytes": 268467
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0105.png",
+    "size_bytes": 229306
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0106.png",
+    "size_bytes": 492685
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0107.png",
+    "size_bytes": 263972
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0108.png",
+    "size_bytes": 260047
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0109.png",
+    "size_bytes": 261148
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0110.png",
+    "size_bytes": 271820
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0111.png",
+    "size_bytes": 335620
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0112.png",
+    "size_bytes": 233437
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0113.png",
+    "size_bytes": 242236
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0114.png",
+    "size_bytes": 426909
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0115.png",
+    "size_bytes": 300122
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0116.png",
+    "size_bytes": 271513
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0117.png",
+    "size_bytes": 255875
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0118.png",
+    "size_bytes": 322625
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0119.png",
+    "size_bytes": 258991
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0120.png",
+    "size_bytes": 273374
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0121.png",
+    "size_bytes": 277397
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0122.png",
+    "size_bytes": 199733
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0123.png",
+    "size_bytes": 258080
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0124.png",
+    "size_bytes": 294637
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0125.png",
+    "size_bytes": 265678
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0126.png",
+    "size_bytes": 260340
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0127.png",
+    "size_bytes": 232821
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0128.png",
+    "size_bytes": 229318
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0129.png",
+    "size_bytes": 230484
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0130.png",
+    "size_bytes": 275282
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0131.png",
+    "size_bytes": 268960
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0132.png",
+    "size_bytes": 118534
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0133.png",
+    "size_bytes": 273882
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0134.png",
+    "size_bytes": 282788
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0135.png",
+    "size_bytes": 304202
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0136.png",
+    "size_bytes": 335566
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0137.png",
+    "size_bytes": 243042
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0138.png",
+    "size_bytes": 352578
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0139.png",
+    "size_bytes": 242995
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0140.png",
+    "size_bytes": 255741
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0141.png",
+    "size_bytes": 239387
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0142.png",
+    "size_bytes": 322869
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0143.png",
+    "size_bytes": 240135
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0144.png",
+    "size_bytes": 559178
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0145.png",
+    "size_bytes": 491061
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0146.png",
+    "size_bytes": 282274
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0147.png",
+    "size_bytes": 266590
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0148.png",
+    "size_bytes": 234825
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0149.png",
+    "size_bytes": 257687
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0150.png",
+    "size_bytes": 245694
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0151.png",
+    "size_bytes": 218537
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0152.png",
+    "size_bytes": 251322
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0153.png",
+    "size_bytes": 259035
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0154.png",
+    "size_bytes": 288316
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0155.png",
+    "size_bytes": 135474
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0156.png",
+    "size_bytes": 229561
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0157.png",
+    "size_bytes": 270211
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0158.png",
+    "size_bytes": 131886
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0159.png",
+    "size_bytes": 243260
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0160.png",
+    "size_bytes": 238748
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0161.png",
+    "size_bytes": 282825
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0162.png",
+    "size_bytes": 261745
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0163.png",
+    "size_bytes": 267312
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0164.png",
+    "size_bytes": 251767
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0165.png",
+    "size_bytes": 246028
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0166.png",
+    "size_bytes": 268890
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0167.png",
+    "size_bytes": 285210
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0168.png",
+    "size_bytes": 303528
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0169.png",
+    "size_bytes": 596252
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0170.png",
+    "size_bytes": 285754
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0171.png",
+    "size_bytes": 387036
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0172.png",
+    "size_bytes": 257238
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0173.png",
+    "size_bytes": 242898
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0174.png",
+    "size_bytes": 264461
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0175.png",
+    "size_bytes": 668490
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0176.png",
+    "size_bytes": 232786
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0177.png",
+    "size_bytes": 572325
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0178.png",
+    "size_bytes": 349658
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0179.png",
+    "size_bytes": 761735
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0180.png",
+    "size_bytes": 255164
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0181.png",
+    "size_bytes": 239802
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0182.png",
+    "size_bytes": 256416
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0183.png",
+    "size_bytes": 266068
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0184.png",
+    "size_bytes": 234727
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0185.png",
+    "size_bytes": 252003
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0186.png",
+    "size_bytes": 275631
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0187.png",
+    "size_bytes": 271935
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0188.png",
+    "size_bytes": 282474
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0189.png",
+    "size_bytes": 295028
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0190.png",
+    "size_bytes": 269755
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0191.png",
+    "size_bytes": 249840
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0192.png",
+    "size_bytes": 280619
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0193.png",
+    "size_bytes": 278477
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0194.png",
+    "size_bytes": 253762
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0195.png",
+    "size_bytes": 338251
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0196.png",
+    "size_bytes": 262657
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0197.png",
+    "size_bytes": 277535
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0198.png",
+    "size_bytes": 265687
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0199.png",
+    "size_bytes": 263846
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0200.png",
+    "size_bytes": 847912
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0201.png",
+    "size_bytes": 282817
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0202.png",
+    "size_bytes": 214128
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0203.png",
+    "size_bytes": 258080
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0204.png",
+    "size_bytes": 277600
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0205.png",
+    "size_bytes": 284090
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0206.png",
+    "size_bytes": 273472
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0207.png",
+    "size_bytes": 163827
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0208.png",
+    "size_bytes": 271647
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0209.png",
+    "size_bytes": 143918
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0210.png",
+    "size_bytes": 281023
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0211.png",
+    "size_bytes": 284652
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0212.png",
+    "size_bytes": 285513
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0213.png",
+    "size_bytes": 283157
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0214.png",
+    "size_bytes": 249196
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0215.png",
+    "size_bytes": 245277
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0216.png",
+    "size_bytes": 315712
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0217.png",
+    "size_bytes": 259186
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0218.png",
+    "size_bytes": 261465
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0219.png",
+    "size_bytes": 269445
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0220.png",
+    "size_bytes": 298062
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0221.png",
+    "size_bytes": 268895
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0222.png",
+    "size_bytes": 30621
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0223.png",
+    "size_bytes": 270138
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0224.png",
+    "size_bytes": 289492
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0225.png",
+    "size_bytes": 344827
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0226.png",
+    "size_bytes": 283502
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0227.png",
+    "size_bytes": 222803
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0228.png",
+    "size_bytes": 311732
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0229.png",
+    "size_bytes": 275920
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0230.png",
+    "size_bytes": 209993
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0231.png",
+    "size_bytes": 284957
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0232.png",
+    "size_bytes": 287763
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0233.png",
+    "size_bytes": 272105
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0234.png",
+    "size_bytes": 262099
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0235.png",
+    "size_bytes": 306761
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0236.png",
+    "size_bytes": 323390
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0237.png",
+    "size_bytes": 256987
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0238.png",
+    "size_bytes": 180147
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0239.png",
+    "size_bytes": 793528
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0240.png",
+    "size_bytes": 254478
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0241.png",
+    "size_bytes": 256380
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0242.png",
+    "size_bytes": 395715
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0243.png",
+    "size_bytes": 290087
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0244.png",
+    "size_bytes": 268210
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0245.png",
+    "size_bytes": 239830
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0246.png",
+    "size_bytes": 247414
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0247.png",
+    "size_bytes": 269815
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0248.png",
+    "size_bytes": 279887
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0249.png",
+    "size_bytes": 300631
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0250.png",
+    "size_bytes": 206628
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0251.png",
+    "size_bytes": 255349
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0252.png",
+    "size_bytes": 108336
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0253.png",
+    "size_bytes": 258773
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0254.png",
+    "size_bytes": 201804
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0255.png",
+    "size_bytes": 252037
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0256.png",
+    "size_bytes": 220461
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0257.png",
+    "size_bytes": 260018
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0258.png",
+    "size_bytes": 271736
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0259.png",
+    "size_bytes": 245591
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0260.png",
+    "size_bytes": 236165
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0261.png",
+    "size_bytes": 243743
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0262.png",
+    "size_bytes": 57422
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0263.png",
+    "size_bytes": 209139
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0264.png",
+    "size_bytes": 244810
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0265.png",
+    "size_bytes": 185147
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0266.png",
+    "size_bytes": 188463
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0267.png",
+    "size_bytes": 272898
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0268.png",
+    "size_bytes": 344545
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0269.png",
+    "size_bytes": 273173
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0270.png",
+    "size_bytes": 324914
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0271.png",
+    "size_bytes": 297849
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0272.png",
+    "size_bytes": 278495
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0273.png",
+    "size_bytes": 242986
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0274.png",
+    "size_bytes": 266195
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0275.png",
+    "size_bytes": 193184
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0276.png",
+    "size_bytes": 146126
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0277.png",
+    "size_bytes": 489438
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0278.png",
+    "size_bytes": 146830
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0279.png",
+    "size_bytes": 126176
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0280.png",
+    "size_bytes": 831485
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0281.png",
+    "size_bytes": 279553
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0282.png",
+    "size_bytes": 283816
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0283.png",
+    "size_bytes": 286494
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0284.png",
+    "size_bytes": 311999
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0285.png",
+    "size_bytes": 260614
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0286.png",
+    "size_bytes": 245993
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0287.png",
+    "size_bytes": 254971
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0288.png",
+    "size_bytes": 174083
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0289.png",
+    "size_bytes": 169743
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0290.png",
+    "size_bytes": 172114
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0291.png",
+    "size_bytes": 174174
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0292.png",
+    "size_bytes": 156469
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0293.png",
+    "size_bytes": 162259
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0294.png",
+    "size_bytes": 135205
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0295.png",
+    "size_bytes": 61023
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0296.png",
+    "size_bytes": 265938
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0297.png",
+    "size_bytes": 269048
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0298.png",
+    "size_bytes": 266900
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0299.png",
+    "size_bytes": 280551
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0300.png",
+    "size_bytes": 259886
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0301.png",
+    "size_bytes": 384313
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0302.png",
+    "size_bytes": 380846
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0303.png",
+    "size_bytes": 418585
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0304.png",
+    "size_bytes": 284271
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0305.png",
+    "size_bytes": 206410
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0306.png",
+    "size_bytes": 31574
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0307.png",
+    "size_bytes": 218585
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0308.png",
+    "size_bytes": 290810
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0309.png",
+    "size_bytes": 262131
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0310.png",
+    "size_bytes": 223118
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0311.png",
+    "size_bytes": 181643
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0312.png",
+    "size_bytes": 196045
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0313.png",
+    "size_bytes": 174182
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0314.png",
+    "size_bytes": 198560
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0315.png",
+    "size_bytes": 191803
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0316.png",
+    "size_bytes": 204662
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0317.png",
+    "size_bytes": 203039
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0318.png",
+    "size_bytes": 218812
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0319.png",
+    "size_bytes": 190622
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0320.png",
+    "size_bytes": 212748
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0321.png",
+    "size_bytes": 175997
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0322.png",
+    "size_bytes": 232767
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0323.png",
+    "size_bytes": 218475
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0324.png",
+    "size_bytes": 272600
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0325.png",
+    "size_bytes": 171913
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0326.png",
+    "size_bytes": 29541
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0327.png",
+    "size_bytes": 245681
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0328.png",
+    "size_bytes": 790828
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0329.png",
+    "size_bytes": 282684
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0330.png",
+    "size_bytes": 264726
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0331.png",
+    "size_bytes": 983008
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0332.png",
+    "size_bytes": 264176
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0333.png",
+    "size_bytes": 280634
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0334.png",
+    "size_bytes": 284597
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0335.png",
+    "size_bytes": 252329
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0336.png",
+    "size_bytes": 233289
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0337.png",
+    "size_bytes": 272555
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0338.png",
+    "size_bytes": 200178
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0339.png",
+    "size_bytes": 273202
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0340.png",
+    "size_bytes": 220338
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0341.png",
+    "size_bytes": 251266
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0342.png",
+    "size_bytes": 261956
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0343.png",
+    "size_bytes": 241037
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0344.png",
+    "size_bytes": 215615
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0345.png",
+    "size_bytes": 220565
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0346.png",
+    "size_bytes": 192290
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0347.png",
+    "size_bytes": 231523
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0348.png",
+    "size_bytes": 245633
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0349.png",
+    "size_bytes": 272343
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0350.png",
+    "size_bytes": 166663
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0351.png",
+    "size_bytes": 301967
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0352.png",
+    "size_bytes": 164749
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0353.png",
+    "size_bytes": 126306
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0354.png",
+    "size_bytes": 192846
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0355.png",
+    "size_bytes": 275036
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0356.png",
+    "size_bytes": 249773
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0357.png",
+    "size_bytes": 276173
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0358.png",
+    "size_bytes": 254944
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0359.png",
+    "size_bytes": 241250
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0360.png",
+    "size_bytes": 221415
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0361.png",
+    "size_bytes": 294663
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0362.png",
+    "size_bytes": 197233
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0363.png",
+    "size_bytes": 261022
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0364.png",
+    "size_bytes": 582953
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0365.png",
+    "size_bytes": 269796
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0366.png",
+    "size_bytes": 255735
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0367.png",
+    "size_bytes": 619537
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0368.png",
+    "size_bytes": 38682
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0369.png",
+    "size_bytes": 215625
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0370.png",
+    "size_bytes": 239546
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0371.png",
+    "size_bytes": 281608
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0372.png",
+    "size_bytes": 229161
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0373.png",
+    "size_bytes": 179095
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0374.png",
+    "size_bytes": 578334
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0375.png",
+    "size_bytes": 729042
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0376.png",
+    "size_bytes": 271309
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0377.png",
+    "size_bytes": 247703
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0378.png",
+    "size_bytes": 225868
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0379.png",
+    "size_bytes": 195512
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0380.png",
+    "size_bytes": 260466
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0381.png",
+    "size_bytes": 262072
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0382.png",
+    "size_bytes": 233868
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0383.png",
+    "size_bytes": 244074
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0384.png",
+    "size_bytes": 224623
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0385.png",
+    "size_bytes": 208567
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0386.png",
+    "size_bytes": 222902
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0387.png",
+    "size_bytes": 219353
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0388.png",
+    "size_bytes": 215458
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0389.png",
+    "size_bytes": 252735
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0390.png",
+    "size_bytes": 209682
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0391.png",
+    "size_bytes": 597837
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0392.png",
+    "size_bytes": 257914
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0393.png",
+    "size_bytes": 229864
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0394.png",
+    "size_bytes": 207211
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0395.png",
+    "size_bytes": 229929
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0396.png",
+    "size_bytes": 221336
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0397.png",
+    "size_bytes": 251380
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0398.png",
+    "size_bytes": 265445
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0399.png",
+    "size_bytes": 227051
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0400.png",
+    "size_bytes": 280254
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0401.png",
+    "size_bytes": 228514
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0402.png",
+    "size_bytes": 179429
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0403.png",
+    "size_bytes": 211226
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0404.png",
+    "size_bytes": 30344
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0405.png",
+    "size_bytes": 250585
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0406.png",
+    "size_bytes": 189900
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0407.png",
+    "size_bytes": 213845
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0408.png",
+    "size_bytes": 285891
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0409.png",
+    "size_bytes": 257884
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0410.png",
+    "size_bytes": 257866
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0411.png",
+    "size_bytes": 255056
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0412.png",
+    "size_bytes": 241895
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0413.png",
+    "size_bytes": 227014
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0414.png",
+    "size_bytes": 233001
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0415.png",
+    "size_bytes": 233321
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0416.png",
+    "size_bytes": 234988
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0417.png",
+    "size_bytes": 281983
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0418.png",
+    "size_bytes": 299668
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0419.png",
+    "size_bytes": 358710
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0420.png",
+    "size_bytes": 303306
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0421.png",
+    "size_bytes": 203954
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0422.png",
+    "size_bytes": 226729
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0423.png",
+    "size_bytes": 225925
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0424.png",
+    "size_bytes": 174335
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0425.png",
+    "size_bytes": 227668
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0426.png",
+    "size_bytes": 252696
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0427.png",
+    "size_bytes": 249341
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0428.png",
+    "size_bytes": 249852
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0429.png",
+    "size_bytes": 224096
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0430.png",
+    "size_bytes": 227456
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0431.png",
+    "size_bytes": 254979
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0432.png",
+    "size_bytes": 212195
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0433.png",
+    "size_bytes": 264260
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0434.png",
+    "size_bytes": 187934
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0435.png",
+    "size_bytes": 290050
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0436.png",
+    "size_bytes": 285353
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0437.png",
+    "size_bytes": 267623
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0438.png",
+    "size_bytes": 296016
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0439.png",
+    "size_bytes": 315428
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0440.png",
+    "size_bytes": 304747
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0441.png",
+    "size_bytes": 292155
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0442.png",
+    "size_bytes": 245274
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0443.png",
+    "size_bytes": 223430
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0444.png",
+    "size_bytes": 331724
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0445.png",
+    "size_bytes": 288320
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0446.png",
+    "size_bytes": 88071
+  },
+  {
+    "path": "page_images/urdpfi_vol1__page_0447.png",
+    "size_bytes": 163210
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0001.png",
+    "size_bytes": 821081
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0002.png",
+    "size_bytes": 10177
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0003.png",
+    "size_bytes": 54580
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0004.png",
+    "size_bytes": 10177
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0005.png",
+    "size_bytes": 211726
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0006.png",
+    "size_bytes": 56361
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0007.png",
+    "size_bytes": 90133
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0008.png",
+    "size_bytes": 10177
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0009.png",
+    "size_bytes": 280234
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0010.png",
+    "size_bytes": 253793
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0011.png",
+    "size_bytes": 235829
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0012.png",
+    "size_bytes": 290921
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0013.png",
+    "size_bytes": 262138
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0014.png",
+    "size_bytes": 119441
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0015.png",
+    "size_bytes": 182613
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0016.png",
+    "size_bytes": 277968
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0017.png",
+    "size_bytes": 296788
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0018.png",
+    "size_bytes": 180809
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0019.png",
+    "size_bytes": 282475
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0020.png",
+    "size_bytes": 320265
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0021.png",
+    "size_bytes": 251838
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0022.png",
+    "size_bytes": 58380
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0023.png",
+    "size_bytes": 269627
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0024.png",
+    "size_bytes": 294250
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0025.png",
+    "size_bytes": 290385
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0026.png",
+    "size_bytes": 285982
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0027.png",
+    "size_bytes": 232313
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0028.png",
+    "size_bytes": 49186
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0029.png",
+    "size_bytes": 258995
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0030.png",
+    "size_bytes": 261022
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0031.png",
+    "size_bytes": 284873
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0032.png",
+    "size_bytes": 311893
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0033.png",
+    "size_bytes": 244344
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0034.png",
+    "size_bytes": 164353
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0035.png",
+    "size_bytes": 175754
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0036.png",
+    "size_bytes": 47707
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0037.png",
+    "size_bytes": 191895
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0038.png",
+    "size_bytes": 207887
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0039.png",
+    "size_bytes": 207111
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0040.png",
+    "size_bytes": 197328
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0041.png",
+    "size_bytes": 174079
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0042.png",
+    "size_bytes": 226338
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0043.png",
+    "size_bytes": 215548
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0044.png",
+    "size_bytes": 186360
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0045.png",
+    "size_bytes": 159478
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0046.png",
+    "size_bytes": 228768
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0047.png",
+    "size_bytes": 229420
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0048.png",
+    "size_bytes": 183243
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0049.png",
+    "size_bytes": 208346
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0050.png",
+    "size_bytes": 177953
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0051.png",
+    "size_bytes": 194647
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0052.png",
+    "size_bytes": 46886
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0053.png",
+    "size_bytes": 311569
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0054.png",
+    "size_bytes": 303815
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0055.png",
+    "size_bytes": 284054
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0056.png",
+    "size_bytes": 291356
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0057.png",
+    "size_bytes": 292946
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0058.png",
+    "size_bytes": 305831
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0059.png",
+    "size_bytes": 304424
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0060.png",
+    "size_bytes": 272361
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0061.png",
+    "size_bytes": 109845
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0062.png",
+    "size_bytes": 45614
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0063.png",
+    "size_bytes": 257921
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0064.png",
+    "size_bytes": 251898
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0065.png",
+    "size_bytes": 239421
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0066.png",
+    "size_bytes": 287212
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0067.png",
+    "size_bytes": 248254
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0068.png",
+    "size_bytes": 260460
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0069.png",
+    "size_bytes": 257543
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0070.png",
+    "size_bytes": 238648
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0071.png",
+    "size_bytes": 286497
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0072.png",
+    "size_bytes": 245990
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0073.png",
+    "size_bytes": 252037
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0074.png",
+    "size_bytes": 297492
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0075.png",
+    "size_bytes": 70025
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0076.png",
+    "size_bytes": 46087
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0077.png",
+    "size_bytes": 253957
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0078.png",
+    "size_bytes": 261551
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0079.png",
+    "size_bytes": 234933
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0080.png",
+    "size_bytes": 289280
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0081.png",
+    "size_bytes": 272260
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0082.png",
+    "size_bytes": 276003
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0083.png",
+    "size_bytes": 224859
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0084.png",
+    "size_bytes": 226228
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0085.png",
+    "size_bytes": 95975
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0086.png",
+    "size_bytes": 10171
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0087.png",
+    "size_bytes": 10179
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0088.png",
+    "size_bytes": 10177
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0089.png",
+    "size_bytes": 54540
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0090.png",
+    "size_bytes": 10177
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0091.png",
+    "size_bytes": 224540
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0092.png",
+    "size_bytes": 252361
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0093.png",
+    "size_bytes": 205280
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0094.png",
+    "size_bytes": 69200
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0095.png",
+    "size_bytes": 115705
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0096.png",
+    "size_bytes": 10177
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0097.png",
+    "size_bytes": 290641
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0098.png",
+    "size_bytes": 268669
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0099.png",
+    "size_bytes": 250740
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0100.png",
+    "size_bytes": 448842
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0101.png",
+    "size_bytes": 286686
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0102.png",
+    "size_bytes": 248448
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0103.png",
+    "size_bytes": 283231
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0104.png",
+    "size_bytes": 293999
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0105.png",
+    "size_bytes": 73357
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0106.png",
+    "size_bytes": 145945
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0107.png",
+    "size_bytes": 237865
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0108.png",
+    "size_bytes": 238661
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0109.png",
+    "size_bytes": 242920
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0110.png",
+    "size_bytes": 214316
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0111.png",
+    "size_bytes": 229647
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0112.png",
+    "size_bytes": 244356
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0113.png",
+    "size_bytes": 230658
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0114.png",
+    "size_bytes": 199294
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0115.png",
+    "size_bytes": 243989
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0116.png",
+    "size_bytes": 110184
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0117.png",
+    "size_bytes": 211867
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0118.png",
+    "size_bytes": 231075
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0119.png",
+    "size_bytes": 223001
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0120.png",
+    "size_bytes": 229855
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0121.png",
+    "size_bytes": 226869
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0122.png",
+    "size_bytes": 221457
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0123.png",
+    "size_bytes": 232956
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0124.png",
+    "size_bytes": 224492
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0125.png",
+    "size_bytes": 220390
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0126.png",
+    "size_bytes": 110603
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0127.png",
+    "size_bytes": 224953
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0128.png",
+    "size_bytes": 255263
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0129.png",
+    "size_bytes": 232837
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0130.png",
+    "size_bytes": 241511
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0131.png",
+    "size_bytes": 217188
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0132.png",
+    "size_bytes": 217695
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0133.png",
+    "size_bytes": 233266
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0134.png",
+    "size_bytes": 215630
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0135.png",
+    "size_bytes": 240708
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0136.png",
+    "size_bytes": 244461
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0137.png",
+    "size_bytes": 237707
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0138.png",
+    "size_bytes": 231374
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0139.png",
+    "size_bytes": 226208
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0140.png",
+    "size_bytes": 243314
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0141.png",
+    "size_bytes": 231258
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0142.png",
+    "size_bytes": 221134
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0143.png",
+    "size_bytes": 233823
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0144.png",
+    "size_bytes": 240306
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0145.png",
+    "size_bytes": 234825
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0146.png",
+    "size_bytes": 175436
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0147.png",
+    "size_bytes": 305067
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0148.png",
+    "size_bytes": 301604
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0149.png",
+    "size_bytes": 297069
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0150.png",
+    "size_bytes": 289874
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0151.png",
+    "size_bytes": 295014
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0152.png",
+    "size_bytes": 294462
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0153.png",
+    "size_bytes": 284103
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0154.png",
+    "size_bytes": 289667
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0155.png",
+    "size_bytes": 296986
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0156.png",
+    "size_bytes": 219230
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0157.png",
+    "size_bytes": 238365
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0158.png",
+    "size_bytes": 235118
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0159.png",
+    "size_bytes": 284693
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0160.png",
+    "size_bytes": 284311
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0161.png",
+    "size_bytes": 224492
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0162.png",
+    "size_bytes": 44866
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0163.png",
+    "size_bytes": 192194
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0164.png",
+    "size_bytes": 46518
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0165.png",
+    "size_bytes": 254208
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0166.png",
+    "size_bytes": 250184
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0167.png",
+    "size_bytes": 140341
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0168.png",
+    "size_bytes": 44719
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0169.png",
+    "size_bytes": 86145
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0170.png",
+    "size_bytes": 116674
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0171.png",
+    "size_bytes": 124870
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0172.png",
+    "size_bytes": 104124
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0173.png",
+    "size_bytes": 82764
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0174.png",
+    "size_bytes": 137008
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0175.png",
+    "size_bytes": 92740
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0176.png",
+    "size_bytes": 78298
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0177.png",
+    "size_bytes": 103097
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0178.png",
+    "size_bytes": 122628
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0179.png",
+    "size_bytes": 95124
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0180.png",
+    "size_bytes": 88391
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0181.png",
+    "size_bytes": 112571
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0182.png",
+    "size_bytes": 110567
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0183.png",
+    "size_bytes": 98782
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0184.png",
+    "size_bytes": 108152
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0185.png",
+    "size_bytes": 94872
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0186.png",
+    "size_bytes": 89094
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0187.png",
+    "size_bytes": 139711
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0188.png",
+    "size_bytes": 141562
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0189.png",
+    "size_bytes": 76523
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0190.png",
+    "size_bytes": 179882
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0191.png",
+    "size_bytes": 165132
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0192.png",
+    "size_bytes": 133777
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0193.png",
+    "size_bytes": 115840
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0194.png",
+    "size_bytes": 132484
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0195.png",
+    "size_bytes": 107013
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0196.png",
+    "size_bytes": 129233
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0197.png",
+    "size_bytes": 75794
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0198.png",
+    "size_bytes": 84129
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0199.png",
+    "size_bytes": 146132
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0200.png",
+    "size_bytes": 109531
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0201.png",
+    "size_bytes": 97824
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0202.png",
+    "size_bytes": 84747
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0203.png",
+    "size_bytes": 213088
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0204.png",
+    "size_bytes": 208252
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0205.png",
+    "size_bytes": 434684
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0206.png",
+    "size_bytes": 43907
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0207.png",
+    "size_bytes": 265124
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0208.png",
+    "size_bytes": 161712
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0209.png",
+    "size_bytes": 251963
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0210.png",
+    "size_bytes": 262860
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0211.png",
+    "size_bytes": 235708
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0212.png",
+    "size_bytes": 222010
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0213.png",
+    "size_bytes": 244490
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0214.png",
+    "size_bytes": 274865
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0215.png",
+    "size_bytes": 242126
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0216.png",
+    "size_bytes": 253755
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0217.png",
+    "size_bytes": 221422
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0218.png",
+    "size_bytes": 285054
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0219.png",
+    "size_bytes": 291711
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0220.png",
+    "size_bytes": 121877
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0221.png",
+    "size_bytes": 243587
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0222.png",
+    "size_bytes": 279881
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0223.png",
+    "size_bytes": 274746
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0224.png",
+    "size_bytes": 268958
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0225.png",
+    "size_bytes": 291856
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0226.png",
+    "size_bytes": 244961
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0227.png",
+    "size_bytes": 265868
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0228.png",
+    "size_bytes": 218812
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0229.png",
+    "size_bytes": 260149
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0230.png",
+    "size_bytes": 268697
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0231.png",
+    "size_bytes": 285227
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0232.png",
+    "size_bytes": 252290
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0233.png",
+    "size_bytes": 103026
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0234.png",
+    "size_bytes": 45255
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0235.png",
+    "size_bytes": 257501
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0236.png",
+    "size_bytes": 244763
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0237.png",
+    "size_bytes": 235829
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0238.png",
+    "size_bytes": 247459
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0239.png",
+    "size_bytes": 234723
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0240.png",
+    "size_bytes": 191167
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0241.png",
+    "size_bytes": 275318
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0242.png",
+    "size_bytes": 303739
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0243.png",
+    "size_bytes": 267849
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0244.png",
+    "size_bytes": 63906
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0245.png",
+    "size_bytes": 220075
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0246.png",
+    "size_bytes": 203795
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0247.png",
+    "size_bytes": 194545
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0248.png",
+    "size_bytes": 125038
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0249.png",
+    "size_bytes": 194209
+  },
+  {
+    "path": "page_images/urdpfi_vol2__page_0250.png",
+    "size_bytes": 105286
+  },
+  {
+    "path": "phase0_row_mapping.json",
+    "size_bytes": 118811
+  },
+  {
+    "path": "provenance_report.md",
+    "size_bytes": 1609
+  },
+  {
+    "path": "provenance_results.json",
+    "size_bytes": 5627
+  },
+  {
+    "path": "provenance_tomoro320_full_report.md",
+    "size_bytes": 1639
+  },
+  {
+    "path": "provenance_tomoro320_full_results.json",
+    "size_bytes": 5648
+  },
+  {
+    "path": "reembed_canary_20_result.json",
+    "size_bytes": 632
+  },
+  {
+    "path": "reembed_canary_3_result.json",
+    "size_bytes": 627
+  },
+  {
+    "path": "reembed_full_result.json",
+    "size_bytes": 641
+  }
+]
